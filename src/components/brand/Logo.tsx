@@ -13,13 +13,13 @@ export function ShellMark({ size = 40, className }: { size?: number; className?:
   );
 }
 
-export function Logo({ withText = true }: { withText?: boolean }) {
+export function Logo({ withText = true, inverted = false }: { withText?: boolean; inverted?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <ShellMark size={36} />
+      <ShellMark size={34} />
       {withText && (
-        <span className="text-xl font-extrabold tracking-tight">
-          Camino <span className="text-terracotta">3D</span>
+        <span className={`font-display text-[1.35rem] font-semibold tracking-tight ${inverted ? 'text-white' : ''}`}>
+          Camino <span className={inverted ? 'text-[var(--gold)]' : 'text-terracotta'}>3D</span>
         </span>
       )}
     </span>

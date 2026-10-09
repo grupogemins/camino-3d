@@ -5,37 +5,38 @@
 
 /* ---------- Tokens (tema claro: pedra, verde do caminho, azul atlântico, terracota, dourado da vieira) ---------- */
 :root {
-  --bg: #f5f1e8;
-  --bg-texture: #ece5d6;
-  --surface: #ffffff;
-  --surface-2: #f9f6f0;
-  --ink: #1c2420;
-  --ink-muted: #545d57;
-  --line: #ddd5c5;
-  --primary: #2f5d3a;
-  --primary-ink: #ffffff;
-  --primary-soft: #e3eee3;
-  --blue: #1f4e79;
-  --blue-soft: #e2ecf6;
-  --terracotta: #a8492a;
-  --terracotta-soft: #f7e3da;
-  --gold: #d4a017;
-  --gold-soft: #fbf1d3;
+  /* Paleta "caderno do peregrino": papel, tinta, verde de bosque galego, azul e amarelo das setas */
+  --bg: #f3ebdb;
+  --bg-texture: #e9dfc9;
+  --surface: #fffaf0;
+  --surface-2: #f7f0e1;
+  --ink: #221d16;
+  --ink-muted: #5f574a;
+  --line: #e2d6bf;
+  --primary: #2c5235;
+  --primary-ink: #fffaf0;
+  --primary-soft: #e2ead9;
+  --blue: #1e4f8c;
+  --blue-soft: #e1e9f3;
+  --terracotta: #b0502c;
+  --terracotta-soft: #f6e1d5;
+  --gold: #e9b52c;
+  --gold-soft: #fbefcc;
   --danger: #b3261e;
-  --danger-soft: #fbe3e1;
+  --danger-soft: #fae1dd;
   --warning-ink: #7a4f00;
   --warning-soft: #fff1cc;
   --success: #2f6b3a;
-  --focus: #1f4e79;
-  --shadow: 0 1px 2px rgb(28 36 32 / 0.06), 0 4px 16px rgb(28 36 32 / 0.06);
+  --focus: #1e4f8c;
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 1px 2px rgb(60 40 10 / 0.08), 0 8px 24px -8px rgb(60 40 10 / 0.18);
   color-scheme: light;
 }
 
 [data-theme='dark'] {
-  --bg: #121614;
-  --bg-texture: #171c19;
-  --surface: #1c2320;
-  --surface-2: #222a26;
+  --bg: #13110e;
+  --bg-texture: #1a1712;
+  --surface: #1e1b16;
+  --surface-2: #26221b;
   --ink: #eef1ea;
   --ink-muted: #aab4ac;
   --line: #34403a;
@@ -107,7 +108,8 @@
   --color-warning-soft: var(--warning-soft);
   --color-success: var(--success);
   --font-sans: var(--font-legible), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --radius-card: 1.25rem;
+  --font-display: var(--font-fraunces), Georgia, 'Times New Roman', serif;
+  --radius-card: 1.5rem;
   --shadow-card: var(--shadow);
 }
 
@@ -117,13 +119,35 @@ html {
 
 body {
   background-color: var(--bg);
-  /* Textura discreta de caminho/pedra (pontos sutis) */
-  background-image: radial-gradient(var(--bg-texture) 1px, transparent 1px);
-  background-size: 18px 18px;
+  /* Grão de papel (ruído SVG) */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.1 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   color: var(--ink);
   font-family: var(--font-sans);
   font-size: 1.0625rem;
   line-height: 1.5;
+}
+
+/* Títulos com serifa editorial (estilo guia de viagem) */
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  letter-spacing: -0.01em;
+}
+h1 { font-weight: 650; }
+h2, h3 { font-weight: 600; }
+
+/* Curvas de nível (motivo de mapa topográfico) */
+.topo {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320' viewBox='0 0 320 320'%3E%3Cg fill='none' stroke='%23fff' stroke-opacity='.18' stroke-width='1.2'%3E%3Cpath d='M-20 60c60-40 120 30 180 0s110-50 180-10'/%3E%3Cpath d='M-20 90c60-40 120 30 180 0s110-50 180-10'/%3E%3Cpath d='M-20 120c70-30 110 40 190 5s100-45 170-5'/%3E%3Cpath d='M-20 170c50-20 100 40 170 10s120-40 190 0'/%3E%3Cpath d='M-20 200c50-20 100 40 170 10s120-40 190 0'/%3E%3Cpath d='M-20 250c70-35 120 20 180-5s100-30 180 5'/%3E%3Cpath d='M-20 280c70-35 120 20 180-5s100-30 180 5'/%3E%3Cellipse cx='250' cy='110' rx='30' ry='16'/%3E%3Cellipse cx='250' cy='110' rx='16' ry='8'/%3E%3Cellipse cx='70' cy='230' rx='26' ry='12'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 320px 320px;
+}
+
+/* Linha tracejada da trilha (linha do tempo das etapas) */
+.trail-line {
+  background-image: linear-gradient(var(--line) 55%, transparent 0);
+  background-size: 3px 12px;
+  background-repeat: repeat-y;
 }
 
 :focus-visible {

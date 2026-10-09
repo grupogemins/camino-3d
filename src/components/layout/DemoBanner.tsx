@@ -11,9 +11,9 @@ export function DemoBanner() {
           <WifiOff aria-hidden size={16} /> Sem conexão: usando dados salvos no aparelho
         </div>
       )}
-      <div className="flex items-center justify-center gap-2 bg-gold-soft px-3 py-1 text-xs font-semibold text-warning">
-        <FlaskConical aria-hidden size={14} />
-        MVP com dados de demonstração: preços, avaliações, clima, eventos e peregrinos são fictícios.
+      <div className="flex items-center justify-center gap-1.5 px-3 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+        <FlaskConical aria-hidden size={12} />
+        Demonstração · dados fictícios
       </div>
     </div>
   );
