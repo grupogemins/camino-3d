@@ -42,8 +42,16 @@ export default function JornadaPage() {
   const here = cities.length ? getStop(cities[cities.length - 1].stopId) : getStop(currentSegment?.fromStopId ?? 'porto');
   const weather = useApi<WeatherSnapshot>(here ? weatherUrl(here.coord, here.name) : null);
   const region = trip ? currentRegion(route, trip) : 'porto';
-  const tod = timeOfDayFor(hourIn(timeZoneFor(region), now));
-  const mood = worldWeather(weather.data);
+  // Pré-visualização (?hora=dusk&tempo=clear) para demonstrações; sem parâmetros, usa hora e clima reais.
+  const [preview, setPreview] = useState<{ hora?: keyof typeof TIME_LABEL; tempo?: keyof typeof WEATHER_LABEL }>({});
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const hora = q.get('hora');
+    const tempo = q.get('tempo');
+    setPreview({ hora: hora && hora in TIME_LABEL ? (hora as keyof typeof TIME_LABEL) : undefined, tempo: tempo && tempo in WEATHER_LABEL ? (tempo as keyof typeof WEATHER_LABEL) : undefined });
+  }, []);
+  const tod = preview.hora ?? timeOfDayFor(hourIn(timeZoneFor(region), now));
+  const mood = preview.tempo ?? worldWeather(weather.data);
 
   // Peregrinos fictícios que aceitaram aparecer (disponíveis e com localização não oculta) na mesma parada.
   const companions = useMemo(

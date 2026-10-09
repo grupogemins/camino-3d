@@ -1,111 +1,95 @@
 'use client';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
+import { ToneMappingMode } from 'postprocessing';
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { AvatarConfiguration, RouteStop } from '@/lib/domain/types';
-import { PilgrimModel, type PilgrimAction, type WeatherMood } from './PilgrimModel';
-import { CathedralSilhouette, CityGate, Cruceiro, Horreo, Milestone, Rain, StoneHouse, Tree } from './SceneBits';
-
-type Region = RouteStop['region'];
 import type { TimeOfDay } from '@/lib/journey';
-export type { TimeOfDay };
+import { PilgrimModel, type PilgrimAction, type WeatherMood } from './PilgrimModel';
+import { CathedralSilhouette, CityGate, Cruceiro, Horreo, Milestone, Rain, StoneHouse } from './SceneBits';
+import { rimUniforms, seeded, toon } from './toon';
+import { distToTrail, Flowers, Grass, heightAt, makeTrail, Motes, PaintedSky, Rock, Terrain, ToonTree, TrailRibbon, type Quality, type SkyLook } from './world';
 
-/** Céu, luz e névoa conforme a hora local e o clima. */
-const SKY: Record<TimeOfDay, { sky: string; sun: number; hemi: number; sunColor: string }> = {
-  dawn: { sky: '#f3cfa8', sun: 0.8, hemi: 0.7, sunColor: '#ffd6a0' },
-  day: { sky: '#f2dfb8', sun: 1.3, hemi: 0.9, sunColor: '#ffffff' },
-  dusk: { sky: '#e9b48c', sun: 0.7, hemi: 0.6, sunColor: '#ffb27a' },
-  night: { sky: '#26324a', sun: 0.15, hemi: 0.35, sunColor: '#9fb4ff' },
+export type { TimeOfDay };
+type Region = RouteStop['region'];
+
+/** Aparência do céu e da luz por hora local (paleta pintada, estilo aventura). */
+const LOOK: Record<TimeOfDay, SkyLook & { fog: string; sunDir: [number, number, number]; sunI: number; amb: string; ambI: number; rim: string; grass: number }> = {
+  dawn: { top: '#6c8fcc', horizon: '#f8c99c', bottom: '#c9b49a', sun: '#ffcf8a', cloudLit: '#ffe2c2', cloudShade: '#c99c9c', cover: 0.4, stars: 0, fog: '#e8c9ac', sunDir: [0.85, 0.18, -0.5], sunI: 2.0, amb: '#ffd9b8', ambI: 0.9, rim: '#ffd6a0', grass: 0.95 },
+  day: { top: '#3f8fdc', horizon: '#cfe7f2', bottom: '#a8c7cf', sun: '#fff1c9', cloudLit: '#ffffff', cloudShade: '#b9c9de', cover: 0.42, stars: 0, fog: '#c3dde9', sunDir: [0.5, 0.65, 0.45], sunI: 2.6, amb: '#e6f0ff', ambI: 1.05, rim: '#fff6dc', grass: 1.05 },
+  dusk: { top: '#3d4b8c', horizon: '#f39b6a', bottom: '#b07a6a', sun: '#ffaa66', cloudLit: '#ffc79c', cloudShade: '#8a6a8c', cover: 0.45, stars: 0.05, fog: '#d99a82', sunDir: [-0.85, 0.16, -0.5], sunI: 1.9, amb: '#ffc1a0', ambI: 0.8, rim: '#ffb27a', grass: 0.85 },
+  night: { top: '#0b1430', horizon: '#2a3c66', bottom: '#1b2540', sun: '#a9bcff', cloudLit: '#4b5b84', cloudShade: '#1f2944', cover: 0.35, stars: 0.9, fog: '#22325a', sunDir: [0.3, 0.6, 0.4], sunI: 0.55, amb: '#7d8fc4', ambI: 0.55, rim: '#a9c1ff', grass: 0.45 },
 };
 
+const RAIN_LOOK: Partial<SkyLook> & { fog: string } = { top: '#7b8894', horizon: '#b8c2c8', bottom: '#8e9aa1', cloudLit: '#cfd6db', cloudShade: '#8b969f', cover: 0.95, fog: '#aab5bc' };
 
-/** Caminho em curva suave (estilizado) ao longo do qual o peregrino caminha. */
-function useTrail() {
-  return useMemo(
-    () =>
-      new THREE.CatmullRomCurve3(
-        [
-          [-2, 0, 40],
-          [3, 0, 28],
-          [-2, 0, 16],
-          [2, 0, 4],
-          [-1, 0, -8],
-          [3, 0, -20],
-          [0, 0, -34],
-        ].map(([x, y, z]) => new THREE.Vector3(x, y, z)),
-      ),
-    [],
-  );
+/** Qualidade gráfica: alta em computadores e celulares potentes. */
+function detectQuality(): Quality {
+  if (typeof window === 'undefined') return 'low';
+  const forced = new URLSearchParams(window.location.search).get('gfx');
+  if (forced === 'high' || forced === 'low') return forced;
+  const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  const cores = navigator.hardwareConcurrency ?? 4;
+  return !mobile && cores >= 4 ? 'high' : 'low';
 }
 
-function TrailMesh({ curve }: { curve: THREE.CatmullRomCurve3 }) {
-  const geometry = useMemo(() => {
-    const pts = curve.getSpacedPoints(160);
-    const positions: number[] = [];
-    const indices: number[] = [];
-    const halfWidth = 1.1;
-    pts.forEach((p, i) => {
-      const t = curve.getTangentAt(i / 160);
-      const n = new THREE.Vector3(-t.z, 0, t.x).normalize();
-      positions.push(p.x + n.x * halfWidth, 0.02, p.z + n.z * halfWidth, p.x - n.x * halfWidth, 0.02, p.z - n.z * halfWidth);
-      if (i < pts.length - 1) {
-        const a = i * 2;
-        indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-      }
-    });
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    g.setIndex(indices);
-    g.computeVertexNormals();
-    return g;
-  }, [curve]);
-  return (
-    <mesh geometry={geometry} receiveShadow>
-      <meshStandardMaterial color="#cfae80" roughness={1} side={THREE.DoubleSide} />
-    </mesh>
-  );
-}
-
-function Walker({ curve, config, action, weather, animate, progress, souvenirs }: { curve: THREE.CatmullRomCurve3; config: AvatarConfiguration; action: PilgrimAction; weather: WeatherMood; animate: boolean; progress?: number; souvenirs?: number }) {
+function Walker({ curve, config, action, weather, animate, progress, souvenirs, coastal, sunDir, quality, sunIntensity, sunColor }: { curve: THREE.CatmullRomCurve3; config: AvatarConfiguration; action: PilgrimAction; weather: WeatherMood; animate: boolean; progress?: number; souvenirs?: number; coastal: boolean; sunDir: THREE.Vector3; quality: Quality; sunIntensity: number; sunColor: string }) {
   const ref = useRef<THREE.Group>(null);
-  const t = useRef(progress ?? 0.15);
+  const sun = useRef<THREE.DirectionalLight>(null);
+  const t = useRef(progress ?? 0.12);
   const { camera } = useThree();
-  const camTarget = useMemo(() => new THREE.Vector3(), []);
+  const camPos = useMemo(() => new THREE.Vector3(), []);
+  const look = useMemo(() => new THREE.Vector3(), []);
+  const first = useRef(true);
   useFrame((_, dt) => {
-    if (progress !== undefined) t.current = THREE.MathUtils.lerp(t.current, 0.05 + progress * 0.9, 0.05);
-    else if (animate && action === 'walk') t.current = (t.current + dt * 0.012) % 0.95;
-    const p = curve.getPointAt(t.current);
-    const tan = curve.getTangentAt(t.current);
+    if (progress !== undefined) t.current = THREE.MathUtils.lerp(t.current, 0.04 + progress * 0.86, first.current ? 1 : 0.05);
+    else if (animate && action === 'walk') t.current = (t.current + dt * 0.0085) % 0.9;
+    const u = t.current;
+    const p = curve.getPointAt(u);
+    const tan = curve.getTangentAt(u);
+    const y = heightAt(p.x, p.z, coastal, 0);
     if (ref.current) {
-      ref.current.position.copy(p);
-      ref.current.rotation.y = Math.atan2(-tan.x, -tan.z);
+      ref.current.position.set(p.x, y, p.z);
+      ref.current.rotation.y = Math.atan2(tan.x, tan.z);
     }
-    // câmera em terceira pessoa, por trás e acima (como nas fotos de referência)
-    camTarget.set(p.x - tan.x * 6 + 1.5, 3.4, p.z - tan.z * 6);
-    camera.position.lerp(camTarget, animate ? 0.06 : 1);
-    camera.lookAt(p.x + tan.x * 4, 1.2, p.z + tan.z * 4);
+    // câmera de aventura: atrás, levemente ao lado e acima, olhando adiante
+    camPos.set(p.x - tan.x * 6.4 + 1.8, y + 2.7, p.z - tan.z * 6.4);
+    camPos.y = Math.max(camPos.y, heightAt(camPos.x, camPos.z, coastal) + 1.2);
+    camera.position.lerp(camPos, first.current || !animate ? 1 : 0.05);
+    look.set(p.x + tan.x * 5, y + 1.25, p.z + tan.z * 5);
+    camera.lookAt(look);
+    if (sun.current) {
+      sun.current.position.set(p.x + sunDir.x * 40, y + sunDir.y * 40, p.z + sunDir.z * 40);
+      sun.current.target.position.set(p.x, y, p.z);
+      sun.current.target.updateMatrixWorld();
+    }
+    first.current = false;
   });
   return (
-    <group ref={ref}>
-      <group rotation={[0, Math.PI, 0]}>
+    <>
+      <directionalLight ref={sun} intensity={sunIntensity} color={sunColor} castShadow shadow-mapSize={quality === 'high' ? [2048, 2048] : [1024, 1024]} shadow-camera-left={-22} shadow-camera-right={22} shadow-camera-top={22} shadow-camera-bottom={-22} shadow-camera-far={120} shadow-bias={-0.0006} shadow-normalBias={0.04} />
+      <group ref={ref}>
         <PilgrimModel config={config} action={action} weather={weather} animate={animate} souvenirs={souvenirs} />
       </group>
-    </group>
+    </>
   );
 }
 
-/** Outros peregrinos (com consentimento) caminhando à frente e atrás, sem posição real. */
-function Companions({ curve, configs, weather, animate, around }: { curve: THREE.CatmullRomCurve3; configs: AvatarConfiguration[]; weather: WeatherMood; animate: boolean; around: number }) {
+/** Outros peregrinos (com consentimento) à frente e atrás, sem posição real. */
+function Companions({ curve, configs, weather, animate, around, coastal }: { curve: THREE.CatmullRomCurve3; configs: AvatarConfiguration[]; weather: WeatherMood; animate: boolean; around: number; coastal: boolean }) {
   return (
     <>
       {configs.slice(0, 4).map((c, i) => {
-        const u = THREE.MathUtils.clamp(around + (i % 2 ? -1 : 1) * (0.06 + i * 0.05), 0.02, 0.97);
+        const u = THREE.MathUtils.clamp(around + (i % 2 ? -1 : 1) * (0.035 + i * 0.03), 0.02, 0.95);
         const p = curve.getPointAt(u);
         const tan = curve.getTangentAt(u);
-        const side = i % 2 ? 0.55 : -0.55;
+        const side = i % 2 ? 0.6 : -0.6;
+        const x = p.x - tan.z * side;
+        const z = p.z + tan.x * side;
         return (
-          <group key={i} position={[p.x + -tan.z * side, 0, p.z + tan.x * side]} rotation={[0, Math.atan2(-tan.x, -tan.z) + Math.PI, 0]}>
-            <PilgrimModel config={c} action="walk" weather={weather} animate={animate} />
+          <group key={i} position={[x, heightAt(x, z, coastal, 0), z]} rotation={[0, Math.atan2(tan.x, tan.z), 0]}>
+            <PilgrimModel config={c} action="walk" weather={weather} animate={animate} outline={false} />
           </group>
         );
       })}
@@ -113,21 +97,41 @@ function Companions({ curve, configs, weather, animate, around }: { curve: THREE
   );
 }
 
-function Scenery({ region, curve }: { region: Region; curve: THREE.CatmullRomCurve3 }) {
-  const coastal = region === 'rias_baixas' || region === 'porto';
+function Scenery({ region, curve, coastal, quality }: { region: Region; curve: THREE.CatmullRomCurve3; coastal: boolean; quality: Quality }) {
   const galician = region !== 'minho' && region !== 'porto';
   const items = useMemo(() => {
-    const out: { kind: 'house' | 'tree' | 'horreo' | 'pine'; pos: [number, number, number]; rot: number; seed: number }[] = [];
-    for (let i = 0; i < 26; i++) {
-      const u = (i + 0.5) / 26;
+    const rnd = seeded(region.length * 13 + 5);
+    const out: { kind: 'house' | 'horreo' | 'tree' | 'pine' | 'euc' | 'rock'; pos: [number, number, number]; rot: number; seed: number; scale: number }[] = [];
+    const place = (x: number, z: number) => [x, heightAt(x, z, coastal), z] as [number, number, number];
+    // aldeias ao longo da trilha
+    for (const u of [0.22, 0.55]) {
       const p = curve.getPointAt(u);
-      const side = i % 2 === 0 ? 1 : -1;
-      const off = 4 + ((i * 37) % 7);
-      const kind = i % 5 === 0 ? 'house' : i % 7 === 0 && galician ? 'horreo' : galician && i % 3 === 0 ? 'pine' : 'tree';
-      out.push({ kind, pos: [p.x + side * off, 0, p.z + ((i * 13) % 5) - 2], rot: side > 0 ? -Math.PI / 2 : Math.PI / 2, seed: i });
+      const tan = curve.getTangentAt(u);
+      for (let k = 0; k < 4; k++) {
+        const side = k % 2 ? 1 : -1;
+        const along = (k - 1.5) * 3.4;
+        const off = 5 + rnd() * 1.5;
+        const x = p.x + tan.x * along - tan.z * side * off;
+        const z = p.z + tan.z * along + tan.x * side * off;
+        out.push({ kind: k === 3 && galician ? 'horreo' : 'house', pos: place(x, z), rot: Math.atan2(tan.x, tan.z) + (side > 0 ? -Math.PI / 2 : Math.PI / 2), seed: k + Math.round(u * 10), scale: 1 });
+      }
+    }
+    // árvores e pedras espalhadas
+    const n = quality === 'high' ? 110 : 60;
+    for (let i = 0; i < n; i++) {
+      const x = (rnd() - 0.5) * 80;
+      const z = 48 - rnd() * 110;
+      const d = distToTrail(x, z);
+      if (d < 6.5) continue;
+      const h = heightAt(x, z, coastal, d);
+      if (coastal && h < 0.3) continue;
+      const r = rnd();
+      const kind = r < 0.12 ? 'rock' : galician ? (r < 0.45 ? 'pine' : r < 0.6 ? 'euc' : 'tree') : r < 0.3 ? 'euc' : 'tree';
+      out.push({ kind, pos: [x, h, z], rot: rnd() * 6, seed: i, scale: 0.8 + rnd() * 0.7 });
     }
     return out;
-  }, [curve, galician]);
+  }, [region, curve, coastal, galician, quality]);
+
   return (
     <>
       {items.map((it, i) =>
@@ -135,38 +139,58 @@ function Scenery({ region, curve }: { region: Region; curve: THREE.CatmullRomCur
           <StoneHouse key={i} position={it.pos} rotation={it.rot} seed={it.seed} />
         ) : it.kind === 'horreo' ? (
           <Horreo key={i} position={it.pos} rotation={it.rot} />
+        ) : it.kind === 'rock' ? (
+          <Rock key={i} position={it.pos} scale={it.scale} seed={it.seed} />
         ) : (
-          <Tree key={i} position={it.pos} kind={it.kind === 'pine' ? 'pine' : i % 4 === 0 ? 'eucalyptus' : 'round'} scale={0.9 + (i % 3) * 0.2} />
+          <ToonTree key={i} position={it.pos} kind={it.kind === 'pine' ? 'pine' : it.kind === 'euc' ? 'eucalyptus' : 'round'} scale={it.scale} seed={it.seed} />
         ),
       )}
-      {/* vila ao fundo */}
-      {[0, 1, 2, 3, 4].map((i) => (
-        <StoneHouse key={`v${i}`} position={[-6 + i * 3, 0, -40 - (i % 2) * 2]} seed={i + 3} scale={1.2} />
-      ))}
-      <CityGate position={[0, 0, -31]} />
-      {region === 'santiago' && <CathedralSilhouette position={[0, 0, -62]} scale={1.1} />}
-      <Cruceiro position={[2.5, 0, 10]} />
-      <Milestone position={[2.2, 0, 22]} rotation={-0.3} />
-      <Milestone position={[-2.4, 0, -14]} rotation={0.4} />
+      {(() => {
+        const g = curve.getPointAt(0.84);
+        const tan = curve.getTangentAt(0.84);
+        return <CityGate position={[g.x, heightAt(g.x, g.z, coastal, 0) - 0.05, g.z]} rotation={Math.atan2(tan.x, tan.z)} />;
+      })()}
+      {[0, 1, 2, 3, 4, 5].map((i) => {
+        const x = -9 + i * 3.6;
+        const z = -42 - (i % 2) * 2.5;
+        return <StoneHouse key={`v${i}`} position={[x, heightAt(x, z, coastal), z]} seed={i + 3} scale={1.1} />;
+      })}
+      {region === 'santiago' && <CathedralSilhouette position={[0, heightAt(0, -60, coastal), -60]} scale={1.15} />}
+      {[
+        [0.12, 2.6, 'cruz'],
+        [0.33, -2.3, 'marco'],
+        [0.47, 2.2, 'marco'],
+        [0.7, -2.4, 'marco'],
+      ].map(([u, off, kind], i) => {
+        const p = curve.getPointAt(u as number);
+        const tan = curve.getTangentAt(u as number);
+        const x = p.x - tan.z * (off as number);
+        const z = p.z + tan.x * (off as number);
+        const pos: [number, number, number] = [x, heightAt(x, z, coastal), z];
+        return kind === 'cruz' ? <Cruceiro key={i} position={pos} /> : <Milestone key={i} position={pos} rotation={Math.atan2(tan.x, tan.z) + ((off as number) > 0 ? -1.2 : 1.2)} />;
+      })}
       {coastal && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-60, 0.01, 0]}>
-          <planeGeometry args={[80, 140]} />
-          <meshStandardMaterial color="#3d7fa6" roughness={0.3} />
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-70, -0.35, -20]} material={toon('#4c9cc4')}>
+          <planeGeometry args={[80, 220]} />
         </mesh>
       )}
-      {/* colinas */}
-      {[-30, -10, 15, 35].map((x, i) => (
-        <mesh key={x} position={[x, -6, -70 - i * 6]} scale={[22, 12 + i * 2, 14]}>
-          <sphereGeometry args={[1, 16, 10]} />
-          <meshStandardMaterial color={i % 2 ? '#7f9a6b' : '#8fa77a'} roughness={1} flatShading />
-        </mesh>
-      ))}
+    </>
+  );
+}
+
+function Lighting({ look, raining }: { look: (typeof LOOK)[TimeOfDay]; raining: boolean }) {
+  rimUniforms.uRimColor.value.set(look.rim);
+  rimUniforms.uRimStrength.value = raining ? 0.15 : 0.38;
+  return (
+    <>
+      <hemisphereLight args={[look.amb, '#4f6a3a', look.ambI * (raining ? 0.85 : 1)]} />
+      <ambientLight intensity={0.25} color={look.amb} />
     </>
   );
 }
 
 /**
- * Modo de exploração 3D estilizado da etapa (materiais e formas regionais genéricas).
+ * Mundo de exploração da etapa em estilo cel (relevo, céu pintado, grama ao vento).
  * Não é navegação: o mapa 2D continua sendo a referência.
  */
 export default function ExploreScene({
@@ -190,25 +214,42 @@ export default function ExploreScene({
   companions?: AvatarConfiguration[];
   souvenirs?: number;
 }) {
-  const curve = useTrail();
-  const light = SKY[timeOfDay];
-  const sky = weather === 'rain' ? (timeOfDay === 'night' ? '#1d2533' : '#b9c4ca') : light.sky;
-  const sun = weather === 'rain' ? light.sun * 0.45 : light.sun;
+  const curve = useMemo(() => makeTrail(), []);
+  const quality = useMemo(detectQuality, []);
+  const raining = weather === 'rain';
+  const base = LOOK[timeOfDay];
+  const sky: SkyLook = raining && timeOfDay !== 'night' ? { ...base, ...RAIN_LOOK } : base;
+  const fog = raining && timeOfDay !== 'night' ? RAIN_LOOK.fog : base.fog;
+  const sunDir = useMemo(() => new THREE.Vector3(...base.sunDir).normalize(), [base]);
+  const coastal = region === 'rias_baixas' || region === 'porto';
+  const lush = region !== 'porto';
   return (
-    <Canvas shadows dpr={[1, 1.5]} camera={{ position: [4, 4, 34], fov: 50, far: 200 }} gl={{ powerPreference: 'low-power' }} frameloop={animate ? 'always' : 'demand'}>
-      <color attach="background" args={[sky]} />
-      <fog attach="fog" args={[sky, 30, 110]} />
-      <hemisphereLight args={['#fff1d6', '#5f7f4a', light.hemi]} />
-      <directionalLight position={timeOfDay === 'dawn' ? [30, 8, 10] : timeOfDay === 'dusk' ? [-30, 8, 10] : [20, 25, 10]} color={light.sunColor} intensity={sun} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-30} shadow-camera-right={30} shadow-camera-top={30} shadow-camera-bottom={-30} />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color={region === 'minho' ? '#7a9a5c' : '#6f8f5a'} roughness={1} />
-      </mesh>
-      <TrailMesh curve={curve} />
-      <Scenery region={region} curve={curve} />
-      <Walker curve={curve} config={config} action={action} weather={weather} animate={animate} progress={progress} souvenirs={souvenirs} />
-      {companions.length > 0 && <Companions curve={curve} configs={companions} weather={weather} animate={animate} around={0.05 + (progress ?? 0.15) * 0.9} />}
-      {weather === 'rain' && animate && <Rain count={500} area={30} />}
+    <Canvas
+      shadows
+      dpr={quality === 'high' ? [1, 2] : [1, 1.5]}
+      camera={{ position: [4, 4, 34], fov: 48, near: 0.1, far: 500 }}
+      gl={{ powerPreference: quality === 'high' ? 'high-performance' : 'low-power', antialias: true, toneMapping: THREE.NeutralToneMapping }}
+      frameloop={animate ? 'always' : 'demand'}
+    >
+      <fog attach="fog" args={[fog, raining ? 20 : 50, raining ? 110 : 240]} />
+      <PaintedSky look={sky} sunDir={sunDir} animate={animate} />
+      <Lighting look={base} raining={raining} />
+      <Terrain quality={quality} coastal={coastal} lush={lush} />
+      <TrailRibbon curve={curve} coastal={coastal} />
+      <Grass quality={quality} coastal={coastal} lush={lush} light={base.grass * (raining ? 0.8 : 1)} animate={animate} wind={raining ? 1.8 : 1} />
+      <Flowers coastal={coastal} count={quality === 'high' ? 1200 : 500} />
+      <Scenery region={region} curve={curve} coastal={coastal} quality={quality} />
+      <Walker curve={curve} config={config} action={action} weather={weather} animate={animate} progress={progress} souvenirs={souvenirs} coastal={coastal} sunDir={sunDir} quality={quality} sunIntensity={base.sunI * (raining ? 0.45 : 1)} sunColor={sky.sun} />
+      {companions.length > 0 && <Companions curve={curve} configs={companions} weather={weather} animate={animate} around={0.04 + (progress ?? 0.12) * 0.86} coastal={coastal} />}
+      {raining && animate && <Rain count={quality === 'high' ? 1400 : 600} area={34} />}
+      {!raining && <Motes animate={animate} count={timeOfDay === 'night' ? 160 : 90} color={timeOfDay === 'night' ? '#d8ff8a' : '#fff4c2'} />}
+      {quality === 'high' ? (
+        <EffectComposer multisampling={4}>
+          <Bloom mipmapBlur intensity={timeOfDay === 'night' ? 0.9 : 0.45} luminanceThreshold={0.82} luminanceSmoothing={0.2} />
+          <ToneMapping mode={ToneMappingMode.NEUTRAL} />
+          <Vignette offset={0.32} darkness={0.55} />
+        </EffectComposer>
+      ) : null}
     </Canvas>
   );
 }
