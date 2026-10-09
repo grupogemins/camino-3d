@@ -1,0 +1,191 @@
+@import 'tailwindcss';
+
+/* Variante escura/alto contraste controlada por data-theme no <html> */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/* ---------- Tokens (tema claro: pedra, verde do caminho, azul atlântico, terracota, dourado da vieira) ---------- */
+:root {
+  --bg: #f5f1e8;
+  --bg-texture: #ece5d6;
+  --surface: #ffffff;
+  --surface-2: #f9f6f0;
+  --ink: #1c2420;
+  --ink-muted: #545d57;
+  --line: #ddd5c5;
+  --primary: #2f5d3a;
+  --primary-ink: #ffffff;
+  --primary-soft: #e3eee3;
+  --blue: #1f4e79;
+  --blue-soft: #e2ecf6;
+  --terracotta: #a8492a;
+  --terracotta-soft: #f7e3da;
+  --gold: #d4a017;
+  --gold-soft: #fbf1d3;
+  --danger: #b3261e;
+  --danger-soft: #fbe3e1;
+  --warning-ink: #7a4f00;
+  --warning-soft: #fff1cc;
+  --success: #2f6b3a;
+  --focus: #1f4e79;
+  --shadow: 0 1px 2px rgb(28 36 32 / 0.06), 0 4px 16px rgb(28 36 32 / 0.06);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #121614;
+  --bg-texture: #171c19;
+  --surface: #1c2320;
+  --surface-2: #222a26;
+  --ink: #eef1ea;
+  --ink-muted: #aab4ac;
+  --line: #34403a;
+  --primary: #86c493;
+  --primary-ink: #0f1a12;
+  --primary-soft: #23352a;
+  --blue: #8fbbe6;
+  --blue-soft: #1f2d3a;
+  --terracotta: #ee9b78;
+  --terracotta-soft: #3a2620;
+  --gold: #e6bb45;
+  --gold-soft: #352d16;
+  --danger: #ff8a80;
+  --danger-soft: #3d1f1d;
+  --warning-ink: #ffd36b;
+  --warning-soft: #352a10;
+  --success: #86c493;
+  --focus: #e6bb45;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
+
+[data-theme='contrast'] {
+  --bg: #000000;
+  --bg-texture: #000000;
+  --surface: #000000;
+  --surface-2: #0d0d0d;
+  --ink: #ffffff;
+  --ink-muted: #f0f0f0;
+  --line: #ffffff;
+  --primary: #ffe14d;
+  --primary-ink: #000000;
+  --primary-soft: #1a1a00;
+  --blue: #7ec8ff;
+  --blue-soft: #001a2e;
+  --terracotta: #ffb38a;
+  --terracotta-soft: #2b1200;
+  --gold: #ffe14d;
+  --gold-soft: #1a1a00;
+  --danger: #ff6b6b;
+  --danger-soft: #2b0000;
+  --warning-ink: #ffe14d;
+  --warning-soft: #1a1a00;
+  --success: #7dff9a;
+  --focus: #ffe14d;
+  --shadow: none;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--primary-ink);
+  --color-primary-soft: var(--primary-soft);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-soft: var(--terracotta-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-warning: var(--warning-ink);
+  --color-warning-soft: var(--warning-soft);
+  --color-success: var(--success);
+  --font-sans: var(--font-legible), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --radius-card: 1.25rem;
+  --shadow-card: var(--shadow);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  /* Textura discreta de caminho/pedra (pontos sutis) */
+  background-image: radial-gradient(var(--bg-texture) 1px, transparent 1px);
+  background-size: 18px 18px;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+[data-theme='contrast'] a,
+[data-theme='contrast'] button {
+  text-decoration-thickness: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  background: var(--surface);
+  padding: 0.75rem 1rem;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2));
+  background-size: 400px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-rise {
+  animation: rise 0.35s ease-out both;
+}
+
+/* Respeita "reduzir movimento" do sistema e a preferência do app */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+[data-reduced-motion='true'] *, [data-reduced-motion='true'] *::before, [data-reduced-motion='true'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 11px;
+}
