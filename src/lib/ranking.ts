@@ -33,3 +33,8 @@ export function rankPlaces<T extends Rankable>(places: T[], now = new Date()): T
 export function isSponsoredActive(p: Rankable, now = new Date()): boolean {
   return activeBoost(p, now) > 0;
 }
+
+/** Ordem orgânica pura (usada nas listas e no copiloto). Ofertas pagas aparecem em seção separada. */
+export function rankOrganic<T extends Rankable>(places: T[]): T[] {
+  return [...places].sort((a, b) => organicScore(b) - organicScore(a));
+}

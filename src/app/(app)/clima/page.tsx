@@ -135,7 +135,7 @@ export default function ClimaPage() {
             ))}
           </ul>
         ) : trip ? (
-          <PremiumHint>Previsão para cada etapa da viagem está no Premium.</PremiumHint>
+          <PremiumHint>Previsão para cada etapa da viagem está no Camino Pass.</PremiumHint>
         ) : (
           <p className="text-sm text-muted">Planeje uma viagem para ver o clima por etapa.</p>
         )}

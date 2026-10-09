@@ -250,7 +250,7 @@ export function MapScreen() {
             </Button>
           ) : (
             <ButtonLink className="mt-2" href="/premium" block variant="secondary" icon={<Crown aria-hidden size={18} />}>
-              Mapas offline no Premium
+              Mapas offline no Camino Pass
             </ButtonLink>
           )}
           {offlineMsg && <p className="mt-2 text-sm" role="status">{offlineMsg}</p>}

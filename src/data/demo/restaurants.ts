@@ -2,7 +2,7 @@
 import type { Restaurant } from '@/lib/domain/types';
 import { demoProvenance, demoProvenanceFrom } from './provenance';
 import { between, hashString, pick, seeded } from './seed';
-import { sponsoredPlacement } from './sponsors';
+import { partnerOffer, sponsoredPlacement } from './sponsors';
 import { allStops } from './stops';
 
 const NAMES = {
@@ -34,6 +34,7 @@ export const restaurants: Restaurant[] = allStops.flatMap((stop) => {
       accessible: rnd() > 0.5,
       review: { rating: between(rnd, 3.6, 4.9, 1), count: Math.round(between(rnd, 5, 1200)), ...demoProvenanceFrom('Avaliações') },
       sponsored: kind === 'cafe' && ['barcelos', 'tui', 'redondela', 'padron'].includes(stop.id) && i === 0 ? sponsoredPlacement('sp-2', id, 0.3) : undefined,
+      partnerOffer: kind === 'cafe' && ['barcelos', 'tui', 'redondela', 'padron'].includes(stop.id) && i === 0 ? partnerOffer('sp-2', id) : undefined,
       provenance: demoProvenance,
       avgPrice: { amount: avg, currency: 'EUR', unit: 'per_meal', isEstimate: true, ...demoProvenanceFrom('Preços') },
       openingHours: kind === 'restaurant' ? '12:30–15:30 · 19:30–22:30' : kind === 'bakery' ? '07:00–14:00' : '07:30–20:00',

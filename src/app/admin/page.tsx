@@ -10,10 +10,13 @@ import { DemoBadge } from '@/components/ui/DataSource';
 import { accommodations } from '@/data/demo/accommodations';
 import { demoFunnel, demoKpis, demoReports } from '@/data/demo/moderation';
 import { restaurants } from '@/data/demo/restaurants';
-import { sponsors } from '@/data/demo/sponsors';
+import { demoPartnerStats, sponsors } from '@/data/demo/sponsors';
+import { Affiliates, Economics } from './Business';
 import { getLocalAnalyticsLog } from '@/lib/analytics/events';
 import type { ModerationAction } from '@/lib/domain/types';
 import { formatEur } from '@/lib/format';
+
+const PRICING = { monthly: 'mensal', season: 'por temporada', per_click: 'por clique', per_result: 'por resultado' } as const;
 
 const pct = (n: number) => `${(n * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
 
@@ -65,7 +68,7 @@ function Funnel() {
 }
 
 export default function AdminPage() {
-  const [tab, setTab] = useState<'overview' | 'partners' | 'moderation'>('overview');
+  const [tab, setTab] = useState<'overview' | 'economics' | 'affiliates' | 'partners' | 'moderation'>('overview');
   const [actions, setActions] = useState<Record<string, ModerationAction['action']>>({});
   const localEvents = typeof window !== 'undefined' ? getLocalAnalyticsLog() : [];
   const placements = [...accommodations, ...restaurants].filter((p) => p.sponsored);
@@ -80,16 +83,17 @@ export default function AdminPage() {
         </div>
         <h1 className="mt-4 text-2xl font-extrabold">Painel administrativo</h1>
         <p className="text-muted">Parceiros, patrocínios, moderação e métricas. Acesso real exigirá papel de administrador (RLS).</p>
-        <div className="mt-4"><Segmented label="Seção" hideLabel value={tab} onChange={setTab} options={[{ id: 'overview', label: 'Métricas' }, { id: 'partners', label: 'Parceiros' }, { id: 'moderation', label: 'Moderação' }]} /></div>
+        <div className="mt-4"><Segmented label="Seção" hideLabel value={tab} onChange={setTab} options={[{ id: 'overview', label: 'Métricas' }, { id: 'economics', label: 'Economia' }, { id: 'affiliates', label: 'Criadores' }, { id: 'partners', label: 'Parceiros' }, { id: 'moderation', label: 'Moderação' }]} /></div>
 
         {tab === 'overview' && (
           <div className="mt-4 flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Stat label="Conversão visitante → assinante" value={pct(demoKpis.conversion)} hint="demo" />
-              <Stat label="Receita mensal (MRR)" value={formatEur(demoKpis.mrrEur)} hint="demo, antes de taxas" />
+              <Stat label="Conversão visitante → passe" value={pct(demoKpis.conversion)} hint="demo" />
+              <Stat label="Passes vendidos (semana)" value={demoKpis.passesSold.toLocaleString('pt-BR')} hint="demo" />
+              <Stat label="Receita bruta (semana)" value={formatEur(demoKpis.grossRevenueEur)} hint="demo, com IVA" />
+              <Stat label="Vendas via criadores" value={pct(demoKpis.affiliateShare)} hint="demo" />
               <Stat label="Retenção D7" value={pct(demoKpis.retentionD7)} hint="demo" />
-              <Stat label="Retenção D30" value={pct(demoKpis.retentionD30)} hint="demo" />
-              <Stat label="Cancelamento mensal" value={pct(demoKpis.churnMonthly)} hint="demo" />
+              <Stat label="Reembolsos" value={pct(demoKpis.refundRate)} hint="demo" />
               <Stat label="Cliques para reserva" value={demoKpis.bookingClicks.toLocaleString('pt-BR')} hint="demo" />
               <Stat label="Traduções" value={demoKpis.translationsUsed.toLocaleString('pt-BR')} hint="demo" />
               <Stat label="Conexões entre peregrinos" value={demoKpis.connections} hint="demo" />
@@ -106,32 +110,59 @@ export default function AdminPage() {
         {tab === 'partners' && (
           <div className="mt-4 flex flex-col gap-4">
             <Card>
-              <h2 className="font-bold">Patrocinadores</h2>
+              <h2 className="font-bold">Parceiros</h2>
               <ul className="mt-2 divide-y divide-line">
-                {sponsors.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between py-2">
-                    <span><b>{s.name}</b> <span className="text-sm text-muted">· {s.category}</span></span>
-                    <Badge tone={s.status === 'active' ? 'green' : s.status === 'lead' ? 'blue' : 'neutral'}>{s.status === 'active' ? 'Ativo' : s.status === 'lead' ? 'Negociação' : 'Pausado'}</Badge>
-                  </li>
-                ))}
+                {sponsors.map((s) => {
+                  const st = demoPartnerStats[s.id];
+                  return (
+                    <li key={s.id} className="py-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span><b>{s.name}</b> <span className="text-sm text-muted">· {s.category}</span></span>
+                        <span className="flex flex-wrap gap-1">
+                          {s.tier === 'founding' && <Badge tone="gold">Parceiro fundador</Badge>}
+                          {s.verified && <Badge tone="blue">Verificado</Badge>}
+                          <Badge tone={s.status === 'active' ? 'green' : s.status === 'lead' ? 'blue' : 'neutral'}>{s.status === 'active' ? 'Ativo' : s.status === 'lead' ? 'Negociação' : 'Pausado'}</Badge>
+                        </span>
+                      </div>
+                      {st && (
+                        <dl className="mt-2 grid grid-cols-2 gap-2 text-sm sm:grid-cols-5">
+                          {([['Visualizações', st.views], ['Cliques em contato', st.contactClicks], ['Passaram perto', st.passersBy], ['Cupons usados', st.couponsRedeemed], ['Reservas atribuídas', st.bookingsAttributed]] as const).map(([k, v]) => (
+                            <div key={k} className="rounded-xl bg-surface-2 p-2"><dt className="text-muted">{k}</dt><dd className="font-bold">{v.toLocaleString('pt-BR')}</dd></div>
+                          ))}
+                        </dl>
+                      )}
+                      {s.pricing && <p className="mt-1 text-xs text-muted">Cobrança: {PRICING[s.pricing]} · contagens agregadas e anônimas (demo)</p>}
+                    </li>
+                  );
+                })}
+              </ul>
+              <SectionTitle>Oferta de parceiro fundador</SectionTitle>
+              <ul className="list-disc pl-5 text-sm">
+                <li>Cadastro verificado e selo de parceiro.</li>
+                <li>Oferta exclusiva para peregrinos com cupom rastreável.</li>
+                <li>Destaque contextual, sempre separado das recomendações orgânicas e marcado como publicidade.</li>
+                <li>Painel de desempenho; cobrança por mês, temporada, clique ou resultado.</li>
               </ul>
             </Card>
             <Card>
-              <h2 className="font-bold">Destaques patrocinados ativos ({placements.length})</h2>
+              <h2 className="font-bold">Ofertas de parceiros ativas ({placements.length})</h2>
               <ul className="mt-2 divide-y divide-line text-sm">
                 {placements.map((p) => (
-                  <li key={p.id} className="flex justify-between py-1.5"><span>{p.name} · {p.town}</span><span className="text-muted">boost {p.sponsored!.boost}</span></li>
+                  <li key={p.id} className="flex justify-between py-1.5"><span>{p.name} · {p.town}</span><span className="text-muted">{p.partnerOffer?.couponCode ?? '—'}</span></li>
                 ))}
               </ul>
               <SectionTitle>Regras</SectionTitle>
               <ul className="list-disc pl-5 text-sm">
-                <li>Todo destaque exibe o rótulo &quot;Patrocinado&quot;.</li>
-                <li>O patrocínio só ajusta a ordem (teto de 0,5) e nunca altera alertas, filtros ou o modo &quot;Mais segura&quot;.</li>
+                <li>Ofertas de parceiros aparecem numa seção própria, marcada como publicidade, separada da lista orgânica.</li>
+                <li>Patrocínio nunca altera a ordem orgânica, o copiloto, alertas, filtros ou o modo &quot;Mais segura&quot;.</li>
                 <li>Logotipos de terceiros só com autorização por escrito.</li>
               </ul>
             </Card>
           </div>
         )}
+
+        {tab === 'economics' && <Economics />}
+        {tab === 'affiliates' && <Affiliates />}
 
         {tab === 'moderation' && (
           <ul className="mt-4 flex flex-col gap-3">

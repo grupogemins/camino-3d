@@ -2,6 +2,7 @@
 import { BedDouble, CalendarDays, CloudSun, Compass, Languages, Navigation, NotebookPen, ShieldCheck, Sparkles, UtensilsCrossed } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar2D } from '@/components/avatar/Avatar2D';
+import { CopilotPanel } from '@/components/copilot/CopilotPanel';
 import { TopBar } from '@/components/layout/TopBar';
 import { RouteAlerts } from '@/components/trip/RouteAlerts';
 import { StageSummary } from '@/components/trip/StageSummary';
@@ -46,7 +47,7 @@ export default function HomePage() {
       ) : (
         <div className="flex flex-col gap-4">
           <Card className="flex items-center gap-4">
-            <Link href="/peregrino" aria-label="Personalizar meu peregrino" className="shrink-0 rounded-2xl bg-surface-2">
+            <Link href="/jornada" aria-label="Abrir minha jornada 3D" className="shrink-0 rounded-2xl bg-surface-2">
               <Avatar2D config={avatar} size={88} pose={trip.status === 'completed' ? 'celebrate' : 'walk'} />
             </Link>
             <div className="min-w-0 flex-1">
@@ -54,6 +55,7 @@ export default function HomePage() {
                 <CalendarDays aria-hidden size={14} /> Início em {formatDate(trip.startDate)} · {trip.segments.length} etapas
               </p>
               <ProgressBar value={total ? walked / total : 0} label={`${formatKm(walked)} de ${formatKm(total)}`} />
+              <Link href="/jornada" className="mt-2 inline-flex min-h-11 items-center text-sm font-bold text-primary">Ver minha jornada 3D</Link>
             </div>
           </Card>
 
@@ -71,6 +73,8 @@ export default function HomePage() {
               </div>
             </section>
           )}
+
+          <CopilotPanel />
 
           {dest && <WeatherMini coord={dest.coord} name={dest.name} />}
 

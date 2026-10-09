@@ -87,5 +87,13 @@ export interface CheckoutResult {
 
 export interface BillingProvider {
   id: string;
-  createCheckout(input: { planId: Exclude<PlanId, 'free'>; customerEmail?: string; successUrl: string; cancelUrl: string }): Promise<CheckoutResult>;
+  createCheckout(input: {
+    planId: Exclude<PlanId, 'free'>;
+    customerEmail?: string;
+    successUrl: string;
+    cancelUrl: string;
+    /** Cupom já validado no servidor (lançamento ou afiliado). */
+    couponCode?: string;
+    affiliateId?: string;
+  }): Promise<CheckoutResult>;
 }

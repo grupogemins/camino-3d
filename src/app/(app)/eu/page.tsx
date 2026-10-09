@@ -1,5 +1,5 @@
 'use client';
-import { Crown, NotebookPen, Settings, ShieldCheck, Shirt, Star } from 'lucide-react';
+import { Crown, Film, Globe2, NotebookPen, Settings, ShieldCheck, Shirt, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar2D } from '@/components/avatar/Avatar2D';
 import { TopBar } from '@/components/layout/TopBar';
@@ -10,9 +10,11 @@ import { usePlan } from '@/hooks/usePlan';
 import { useAppStore } from '@/store/useAppStore';
 
 const ITEMS = [
+  { href: '/jornada', icon: Globe2, title: 'Minha jornada 3D', text: 'Seu peregrino avançando pelo Caminho, com lembranças de cada cidade.' },
   { href: '/peregrino', icon: Shirt, title: 'Meu peregrino 3D', text: 'Roupa, mochila, chapéu e acessórios.' },
+  { href: '/retrospectiva', icon: Film, title: 'Retrospectiva', text: 'Mapa, cidades, fotos e números da sua peregrinação.' },
   { href: '/diario', icon: NotebookPen, title: 'Diário e conquistas', text: 'Notas, fotos, carimbos e distintivos.' },
-  { href: '/premium', icon: Crown, title: 'Plano e assinatura', text: 'Gratuito, Passe do Caminho ou Premium.' },
+  { href: '/premium', icon: Crown, title: 'Camino Pass', text: 'Gratuito, Camino Pass ou pacote Grupo/Família.' },
   { href: '/perfil', icon: Settings, title: 'Perfil, privacidade e configurações', text: 'Tema, acessibilidade, dados e conta.' },
   { href: '/seguranca', icon: ShieldCheck, title: 'Central de Segurança', text: 'SOS, contatos e check-in.' },
 ];

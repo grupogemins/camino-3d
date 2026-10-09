@@ -1,10 +1,13 @@
 # Camino 3D
 
-App web mobile-first (PWA) para peregrinos a caminho de Santiago de Compostela. Inclui:
-- Planejamento de etapas e comparação de 3 rotas.
-- Mapa 2D com navegação e exploração 3D.
-- Hospedagens, comida, cultura, clima e tradutor.
-- Comunidade com privacidade por padrão, diário com carimbos simbólicos, central de segurança, Premium e painel admin.
+Peregrinação digital viva para quem caminha até Santiago de Compostela: app web mobile-first (PWA) em que o caminho, o personagem 3D e a comunidade evoluem junto com o peregrino.
+
+- **Copiloto do dia:** sugestões a partir de etapa, ritmo, clima, orçamento, lotação e relatos, com "por que esta sugestão?" e replanejamento.
+- **Mundo 3D da jornada:** o peregrino avança conforme as etapas reais, com região, hora, clima, chegada às cidades e lembranças.
+- **Camino Live:** quantos estão em cada etapa, idiomas, grupos saindo, condições do trecho e convites, sem expor posições.
+- **Memórias:** cartões de etapa e retrospectiva em imagem e vídeo curto, gerados no aparelho.
+- **Camino Pass:** pagamento único por jornada, Grupo/Família, cupons de lançamento e de criadores, rotas de criadores e parceiros fundadores.
+- Também: planejador com 3 rotas comparáveis, mapa 2D e navegação, hospedagens, comida, cultura, clima, tradutor, diário, central de segurança e painel admin.
 
 > **MVP com dados de demonstração.** Preços, avaliações, clima, eventos e peregrinos são simulados e marcados como "Demo" com fonte e data. Nenhuma integração externa está ativa sem a respectiva chave (ver `.env.example`).
 
@@ -30,7 +33,7 @@ Para testar sem WebGL, abra qualquer tela 3D com `?webgl=off`.
 | `npm run build` / `start` | build e servidor de produção |
 | `npm run typecheck` | TypeScript sem emitir |
 | `npm test` | testes unitários (Vitest): planejador, privacidade, geo/navegação, cobrança, segurança, provedores |
-| `npm run test:e2e` | Playwright em celular (Pixel 7) e desktop: onboarding → rota → assinatura, privacidade da comunidade, cancelamento do SOS, fallback sem WebGL |
+| `npm run test:e2e` | Playwright em celular (Pixel 7) e desktop: onboarding → rota → compra do Camino Pass com cupom; copiloto, cartão da etapa, jornada 3D e Camino Live; privacidade da comunidade; cancelamento do SOS; fallback sem WebGL |
 
 O e2e sobe o app em `:3100` (`npm run build` antes). Para usar um Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_PATH`.
 

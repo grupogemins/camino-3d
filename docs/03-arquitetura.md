@@ -30,7 +30,7 @@
  ├─ UI (React, Tailwind, componentes acessíveis)
  ├─ Mapa 2D MapLibre ─┬─ fallback SVG esquemático (offline/sem WebGL)
  ├─ Cena 3D R3F (lazy)┘
- ├─ Zustand (perfil, viagem, privacidade, diário, assinatura) → localStorage
+ ├─ Zustand (perfil, viagem, privacidade, diário, Camino Pass, Camino Live) → localStorage
  ├─ Service Worker (app shell + rotas baixadas para offline)
  └─ fetch /api/*
         │
@@ -69,9 +69,14 @@ Navegação inferior (5 itens, poucas ações por tela): **Início · Mapa · Ex
 /eu                     Hub pessoal
 ├─ /peregrino           Personalização do personagem 3D
 ├─ /diario              Diário, carimbos, conquistas
-├─ /premium             Planos e pagamento
+├─ /copiloto            Sugestões do dia e como o copiloto decide
+├─ /jornada             Mundo 3D da jornada e lembranças
+├─ /cartao/[id]         Cartão da etapa (imagem e vídeo)
+├─ /retrospectiva       Retrospectiva da peregrinação
+├─ /rotas/criadores/[id] Rota de criador
+├─ /premium             Camino Pass (pagamento único) e cupons
 └─ /perfil              Perfil, privacidade, configurações, exclusão de conta
-/admin                  Painel: funil, parceiros, patrocínios, moderação
+/admin                  Painel: métricas, economia, criadores, parceiros, moderação
 ```
 
 ## 3.4 Estrutura de pastas

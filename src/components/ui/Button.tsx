@@ -3,7 +3,7 @@ import Link from 'next/link';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
-type Size = 'md' | 'lg';
+type Size = 'sm' | 'md' | 'lg';
 
 const base =
   'inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed select-none text-center';
@@ -16,6 +16,7 @@ const variants: Record<Variant, string> = {
 };
 // Áreas de toque grandes (mín. 48px) para uso durante a caminhada.
 const sizes: Record<Size, string> = {
+  sm: 'min-h-11 px-3 text-sm',
   md: 'min-h-12 px-4 text-base',
   lg: 'min-h-14 px-6 text-lg',
 };

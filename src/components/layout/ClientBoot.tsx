@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { captureReferral } from '@/lib/billing/referral';
 import { addAnalyticsSink, retentionEventsDue, track, type AnalyticsEvent } from '@/lib/analytics/events';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -28,6 +29,8 @@ export function ClientBoot() {
     document.documentElement.dataset.reducedMotion = String(reducedMotion);
     document.documentElement.style.fontSize = `${textScale * 100}%`;
   }, [reducedMotion, textScale]);
+
+  useEffect(() => captureReferral(window.location.search), []);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {

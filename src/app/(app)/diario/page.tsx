@@ -157,14 +157,14 @@ export default function DiarioPage() {
                 {photos.length > 0 && <div className="mt-2 flex gap-2">{photos.map((p, i) => <img key={i} src={p} alt={`Foto ${i + 1} da nota`} className="h-20 w-20 rounded-xl object-cover" />)}</div>}
               </div>
             ) : (
-              <PremiumHint>Fotos no diário fazem parte do diário completo (Premium).</PremiumHint>
+              <PremiumHint>Fotos no diário fazem parte do diário completo (Camino Pass).</PremiumHint>
             )}
             <Button type="submit" icon={<NotebookPen aria-hidden />}>Salvar nota</Button>
             {msg && <p className="text-sm font-semibold text-primary" role="status">{msg}</p>}
           </form>
         </Card>
       ) : (
-        <PremiumHint>O plano gratuito guarda até {FREE_ENTRIES} notas. O diário completo, com fotos, está no Premium.</PremiumHint>
+        <PremiumHint>O plano gratuito guarda até {FREE_ENTRIES} notas. O diário completo, com fotos, está no Camino Pass.</PremiumHint>
       )}
 
       <SectionTitle>Minhas notas</SectionTitle>

@@ -22,7 +22,7 @@ function Std({ color, rough = 0.85 }: { color: string; rough?: number }) {
  * Peregrino 3D estilizado feito com primitivas (sem assets externos, leve para celulares modestos).
  * Animações procedurais: caminhar, descansar, comemorar; reage ao clima (capa de chuva, gorro).
  */
-export function PilgrimModel({ config, action = 'idle', weather = 'clear', animate = true }: { config: AvatarConfiguration; action?: PilgrimAction; weather?: WeatherMood; animate?: boolean }) {
+export function PilgrimModel({ config, action = 'idle', weather = 'clear', animate = true, souvenirs = 0 }: { config: AvatarConfiguration; action?: PilgrimAction; weather?: WeatherMood; animate?: boolean; /** Lembranças de cidades alcançadas: broches dourados na mochila. */ souvenirs?: number }) {
   const root = useRef<Group>(null);
   const legL = useRef<Group>(null);
   const legR = useRef<Group>(null);
@@ -129,6 +129,13 @@ export function PilgrimModel({ config, action = 'idle', weather = 'clear', anima
               <Std color="#f4efe4" rough={0.5} />
             </mesh>
           )}
+          {/* Broches das cidades alcançadas (evolução ao longo da jornada) */}
+          {Array.from({ length: Math.min(souvenirs, 8) }, (_, i) => (
+            <mesh key={`pin-${i}`} position={[(-pw / 2 + 0.08) + (i % 4) * ((pw - 0.16) / 3), ph / 2 - 0.1 - Math.floor(i / 4) * 0.12, pd / 2 + 0.012]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.035, 0.035, 0.015, 10]} />
+              <meshStandardMaterial color="#d4a017" metalness={0.6} roughness={0.35} />
+            </mesh>
+          ))}
           {config.accessories.includes('gourd') && (
             <mesh position={[pw / 2 + 0.03, -0.1, 0]}>
               <sphereGeometry args={[0.06, 10, 8]} />

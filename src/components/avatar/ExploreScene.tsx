@@ -4,9 +4,20 @@ import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import type { AvatarConfiguration, RouteStop } from '@/lib/domain/types';
 import { PilgrimModel, type PilgrimAction, type WeatherMood } from './PilgrimModel';
-import { Cruceiro, Horreo, Milestone, Rain, StoneHouse, Tree } from './SceneBits';
+import { CathedralSilhouette, CityGate, Cruceiro, Horreo, Milestone, Rain, StoneHouse, Tree } from './SceneBits';
 
 type Region = RouteStop['region'];
+import type { TimeOfDay } from '@/lib/journey';
+export type { TimeOfDay };
+
+/** Céu, luz e névoa conforme a hora local e o clima. */
+const SKY: Record<TimeOfDay, { sky: string; sun: number; hemi: number; sunColor: string }> = {
+  dawn: { sky: '#f3cfa8', sun: 0.8, hemi: 0.7, sunColor: '#ffd6a0' },
+  day: { sky: '#f2dfb8', sun: 1.3, hemi: 0.9, sunColor: '#ffffff' },
+  dusk: { sky: '#e9b48c', sun: 0.7, hemi: 0.6, sunColor: '#ffb27a' },
+  night: { sky: '#26324a', sun: 0.15, hemi: 0.35, sunColor: '#9fb4ff' },
+};
+
 
 /** Caminho em curva suave (estilizado) ao longo do qual o peregrino caminha. */
 function useTrail() {
@@ -55,7 +66,7 @@ function TrailMesh({ curve }: { curve: THREE.CatmullRomCurve3 }) {
   );
 }
 
-function Walker({ curve, config, action, weather, animate, progress }: { curve: THREE.CatmullRomCurve3; config: AvatarConfiguration; action: PilgrimAction; weather: WeatherMood; animate: boolean; progress?: number }) {
+function Walker({ curve, config, action, weather, animate, progress, souvenirs }: { curve: THREE.CatmullRomCurve3; config: AvatarConfiguration; action: PilgrimAction; weather: WeatherMood; animate: boolean; progress?: number; souvenirs?: number }) {
   const ref = useRef<THREE.Group>(null);
   const t = useRef(progress ?? 0.15);
   const { camera } = useThree();
@@ -77,9 +88,28 @@ function Walker({ curve, config, action, weather, animate, progress }: { curve: 
   return (
     <group ref={ref}>
       <group rotation={[0, Math.PI, 0]}>
-        <PilgrimModel config={config} action={action} weather={weather} animate={animate} />
+        <PilgrimModel config={config} action={action} weather={weather} animate={animate} souvenirs={souvenirs} />
       </group>
     </group>
+  );
+}
+
+/** Outros peregrinos (com consentimento) caminhando à frente e atrás, sem posição real. */
+function Companions({ curve, configs, weather, animate, around }: { curve: THREE.CatmullRomCurve3; configs: AvatarConfiguration[]; weather: WeatherMood; animate: boolean; around: number }) {
+  return (
+    <>
+      {configs.slice(0, 4).map((c, i) => {
+        const u = THREE.MathUtils.clamp(around + (i % 2 ? -1 : 1) * (0.06 + i * 0.05), 0.02, 0.97);
+        const p = curve.getPointAt(u);
+        const tan = curve.getTangentAt(u);
+        const side = i % 2 ? 0.55 : -0.55;
+        return (
+          <group key={i} position={[p.x + -tan.z * side, 0, p.z + tan.x * side]} rotation={[0, Math.atan2(-tan.x, -tan.z) + Math.PI, 0]}>
+            <PilgrimModel config={c} action="walk" weather={weather} animate={animate} />
+          </group>
+        );
+      })}
+    </>
   );
 }
 
@@ -113,6 +143,8 @@ function Scenery({ region, curve }: { region: Region; curve: THREE.CatmullRomCur
       {[0, 1, 2, 3, 4].map((i) => (
         <StoneHouse key={`v${i}`} position={[-6 + i * 3, 0, -40 - (i % 2) * 2]} seed={i + 3} scale={1.2} />
       ))}
+      <CityGate position={[0, 0, -31]} />
+      {region === 'santiago' && <CathedralSilhouette position={[0, 0, -62]} scale={1.1} />}
       <Cruceiro position={[2.5, 0, 10]} />
       <Milestone position={[2.2, 0, 22]} rotation={-0.3} />
       <Milestone position={[-2.4, 0, -14]} rotation={0.4} />
@@ -137,22 +169,45 @@ function Scenery({ region, curve }: { region: Region; curve: THREE.CatmullRomCur
  * Modo de exploração 3D estilizado da etapa (materiais e formas regionais genéricas).
  * Não é navegação: o mapa 2D continua sendo a referência.
  */
-export default function ExploreScene({ config, region, weather, action, animate, progress }: { config: AvatarConfiguration; region: Region; weather: WeatherMood; action: PilgrimAction; animate: boolean; progress?: number }) {
+export default function ExploreScene({
+  config,
+  region,
+  weather,
+  action,
+  animate,
+  progress,
+  timeOfDay = 'day',
+  companions = [],
+  souvenirs = 0,
+}: {
+  config: AvatarConfiguration;
+  region: Region;
+  weather: WeatherMood;
+  action: PilgrimAction;
+  animate: boolean;
+  progress?: number;
+  timeOfDay?: TimeOfDay;
+  companions?: AvatarConfiguration[];
+  souvenirs?: number;
+}) {
   const curve = useTrail();
-  const sky = weather === 'rain' ? '#b9c4ca' : '#f2dfb8';
+  const light = SKY[timeOfDay];
+  const sky = weather === 'rain' ? (timeOfDay === 'night' ? '#1d2533' : '#b9c4ca') : light.sky;
+  const sun = weather === 'rain' ? light.sun * 0.45 : light.sun;
   return (
     <Canvas shadows dpr={[1, 1.5]} camera={{ position: [4, 4, 34], fov: 50, far: 200 }} gl={{ powerPreference: 'low-power' }} frameloop={animate ? 'always' : 'demand'}>
       <color attach="background" args={[sky]} />
       <fog attach="fog" args={[sky, 30, 110]} />
-      <hemisphereLight args={['#fff1d6', '#5f7f4a', 0.9]} />
-      <directionalLight position={[20, 25, 10]} intensity={weather === 'rain' ? 0.5 : 1.3} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-30} shadow-camera-right={30} shadow-camera-top={30} shadow-camera-bottom={-30} />
+      <hemisphereLight args={['#fff1d6', '#5f7f4a', light.hemi]} />
+      <directionalLight position={timeOfDay === 'dawn' ? [30, 8, 10] : timeOfDay === 'dusk' ? [-30, 8, 10] : [20, 25, 10]} color={light.sunColor} intensity={sun} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-30} shadow-camera-right={30} shadow-camera-top={30} shadow-camera-bottom={-30} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[200, 200]} />
         <meshStandardMaterial color={region === 'minho' ? '#7a9a5c' : '#6f8f5a'} roughness={1} />
       </mesh>
       <TrailMesh curve={curve} />
       <Scenery region={region} curve={curve} />
-      <Walker curve={curve} config={config} action={action} weather={weather} animate={animate} progress={progress} />
+      <Walker curve={curve} config={config} action={action} weather={weather} animate={animate} progress={progress} souvenirs={souvenirs} />
+      {companions.length > 0 && <Companions curve={curve} configs={companions} weather={weather} animate={animate} around={0.05 + (progress ?? 0.15) * 0.9} />}
       {weather === 'rain' && animate && <Rain count={500} area={30} />}
     </Canvas>
   );

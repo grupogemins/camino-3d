@@ -68,6 +68,62 @@ function terrainFor(route: Route, a: RouteStop, b: RouteStop): Terrain[] {
   return ['dirt', 'forest_trail', 'asphalt'];
 }
 
+/** Monta a etapa entre duas paradas da rota. */
+export function buildSegment(route: Route, a: RouteStop, b: RouteStop, day: number, fitness: FitnessLevel): RouteSegment {
+  const distanceKm = Math.round((b.km - a.km) * 10) / 10;
+  const { ascentM, descentM } = estimateElevation(route, a, b);
+  return {
+    id: `${route.id}-d${day}-${a.id}-${b.id}`,
+    routeId: route.id,
+    day,
+    fromStopId: a.id,
+    toStopId: b.id,
+    fromName: a.name,
+    toName: b.name,
+    startKm: a.km,
+    endKm: b.km,
+    distanceKm,
+    estimatedHours: estimateHours(distanceKm, ascentM, fitness),
+    ascentM,
+    descentM,
+    difficulty: difficultyFor(distanceKm, ascentM),
+    terrain: terrainFor(route, a, b),
+    waypoints: route.waypoints.filter((w) => w.km > a.km && w.km <= b.km),
+  };
+}
+
+/** Paradas com hospedagem dentro de uma etapa (onde dá para encurtar o dia). */
+export function intermediateLodgingStops(route: Route, seg: RouteSegment): RouteStop[] {
+  return route.stops.filter((s) => s.services.lodging && s.km > seg.startKm && s.km < seg.endKm);
+}
+
+/**
+ * Encurta uma etapa terminando em `newEndStopId` e replaneja o restante da viagem
+ * a partir dali, mantendo as etapas já concluídas. Usado pelo copiloto.
+ */
+export function shortenStage(
+  route: Route,
+  segments: RouteSegment[],
+  segmentId: string,
+  newEndStopId: string,
+  opts: { daysTotal: number; dailyKm: number; fitness: FitnessLevel },
+): RouteSegment[] | null {
+  const idx = segments.findIndex((s) => s.id === segmentId);
+  const seg = segments[idx];
+  const from = route.stops.find((s) => s.id === seg?.fromStopId);
+  const to = route.stops.find((s) => s.id === newEndStopId);
+  if (!seg || !from || !to || to.km <= seg.startKm || to.km >= seg.endKm) return null;
+  const head = segments.slice(0, idx);
+  const shortened = buildSegment(route, from, to, seg.day, opts.fitness);
+  const remainingDays = Math.max(1, opts.daysTotal - seg.day);
+  const rest = planStages({ route, originId: to.id, days: remainingDays, dailyKm: opts.dailyKm, fitness: opts.fitness }).segments.map((s, i) => {
+    const a = route.stops.find((x) => x.id === s.fromStopId)!;
+    const b = route.stops.find((x) => x.id === s.toStopId)!;
+    return buildSegment(route, a, b, seg.day + 1 + i, opts.fitness);
+  });
+  return [...head, shortened, ...rest];
+}
+
 /**
  * Divide a rota em etapas diárias.
  * Programação dinâmica sobre as paradas com hospedagem: escolhe exatamente N etapas
@@ -146,29 +202,12 @@ export function planStages(input: PlanInput): PlanResult {
     const a = candidates[path[d - 1]];
     const b = candidates[path[d]];
     const distanceKm = Math.round((b.km - a.km) * 10) / 10;
-    const { ascentM, descentM } = estimateElevation(route, a, b);
+    const { ascentM } = estimateElevation(route, a, b);
     totalAscentM += ascentM;
     if (distanceKm > longLimit) {
       warnings.push({ code: 'long_stage', message: `A etapa ${d} (${a.name} → ${b.name}) tem ${distanceKm} km. Avalie dividir ou usar transporte de apoio.` });
     }
-    segments.push({
-      id: `${route.id}-d${d}-${a.id}-${b.id}`,
-      routeId: route.id,
-      day: d,
-      fromStopId: a.id,
-      toStopId: b.id,
-      fromName: a.name,
-      toName: b.name,
-      startKm: a.km,
-      endKm: b.km,
-      distanceKm,
-      estimatedHours: estimateHours(distanceKm, ascentM, fitness),
-      ascentM,
-      descentM,
-      difficulty: difficultyFor(distanceKm, ascentM),
-      terrain: terrainFor(route, a, b),
-      waypoints: route.waypoints.filter((w) => w.km > a.km && w.km <= b.km),
-    });
+    segments.push(buildSegment(route, a, b, d, fitness));
   }
 
   return { routeId: route.id, segments, totalKm, totalAscentM, warnings, restDays };

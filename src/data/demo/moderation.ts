@@ -14,16 +14,19 @@ export const demoFunnel = [
   { step: 'Cadastro concluído', event: 'signup_completed', value: 1680 },
   { step: 'Onboarding concluído', event: 'onboarding_completed', value: 1310 },
   { step: 'Rota criada', event: 'route_created', value: 1050 },
-  { step: 'Teste Premium', event: 'premium_trial_started', value: 380 },
-  { step: 'Assinatura', event: 'subscription_completed', value: 330 },
+  { step: 'Teste Camino Pass', event: 'premium_trial_started', value: 380 },
+  { step: 'Compra do Camino Pass', event: 'subscription_completed', value: 330 },
 ];
 
 export const demoKpis = {
   retentionD7: 0.41,
   retentionD30: 0.18,
   conversion: 330 / 12000,
-  mrrEur: 330 * 10,
-  churnMonthly: 0.22,
+  passesSold: 330,
+  /** Mistura de preço cheio, lançamento e cupons de criadores. */
+  grossRevenueEur: 330 * 12.4,
+  affiliateShare: 0.38,
+  refundRate: 0.03,
   bookingClicks: 920,
   translationsUsed: 2140,
   locationSharingEnabled: 0.27,

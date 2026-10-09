@@ -24,9 +24,10 @@ Cada integração tem uma variável de ambiente. Sem ela o app continua funciona
 - `TRANSLATION_PROVIDER=deepl`, `DEEPL_API_KEY`. O texto vai ao servidor do app e de lá à DeepL. O áudio nunca passa pelo nosso servidor: o reconhecimento de voz é do navegador e só funciona com consentimento.
 
 ## Pagamentos: Stripe
-1. Crie dois preços: Passe do Caminho (EUR 10, pagamento único, 45 dias) e mensal (EUR 10, recorrente).
-2. `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PASS`, `STRIPE_PRICE_MONTHLY`.
-3. Antes de produção, implemente o webhook (ver doc 05).
+1. Crie dois preços de pagamento único: Camino Pass (EUR 14,99) e Grupo/Família (EUR 34,99).
+2. Crie um cupom com **id personalizado** (ex.: `CAMINO-PROMO`) de EUR 5 de desconto. Ele vale para o código de lançamento e para os códigos de criadores; o código usado vai em `metadata` para atribuir a comissão.
+3. `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PASS`, `STRIPE_PRICE_GROUP`, `STRIPE_COUPON_PROMO`.
+4. Antes de produção, implemente o webhook (ver doc 05).
 
 ## Comunidade, contas e diário (Supabase)
 1. Crie um projeto Supabase com PostGIS e aplique `supabase/migrations/0001_init.sql` (RLS já incluída).
@@ -37,3 +38,12 @@ Cada integração tem uma variável de ambiente. Sem ela o app continua funciona
 
 ## Mapa
 `NEXT_PUBLIC_MAP_STYLE_URL` aceita qualquer estilo MapLibre. Para relevo 3D real, use um provedor com tiles de terreno (MapTiler, Stadia) e confira a licença de atribuição.
+
+## Camino Live, criadores e parceiros
+- **Camino Live:** troque `demoLive()` por uma consulta agregada por parada (nunca linhas por pessoa) e mantenha `MIN_VISIBLE_COUNT = 3`. Relatos e convites viram tabelas com expiração e moderação.
+- **Criadores:** cadastre em `affiliates` com o código, a taxa de comissão e a autorização de uso do nome; a rota de criador referencia uma rota base e dicas por parada.
+- **Parceiros fundadores:** `partner_offers` com cupom e validade. As ofertas aparecem só no componente `PartnerOffers` (seção marcada como publicidade).
+- **Copiloto:** as regras não mudam; passam a receber clima, disponibilidade e relatos reais. Teste as regras novas em `tests/unit/copilot-journey.test.ts`.
+
+## Caminho Francês (rota de lançamento)
+Adicione as paradas e o traçado licenciado em `src/data/demo/routes.ts` (ou na tabela `routes`/`route_stops`), com `region` próprias (ex.: Navarra, Rioja, Castela e Leão, Galiza), lembranças em `src/lib/journey.ts` e o fuso em `timeZoneFor`. É preciso ampliar o tipo `RouteStop['region']` e o cenário da cena 3D (`ExploreScene`) para as novas regiões; planejador, copiloto, Live e cartões reaproveitam a mesma lógica.

@@ -2,9 +2,19 @@
 
 ## 1.1 Visão
 
-**Camino 3D** é o copiloto digital do peregrino: um único aplicativo que acompanha a pessoa do planejamento em casa até a chegada à Praça do Obradoiro, reunindo rota, navegação, hospedagem, comida, clima, cultura, tradução, segurança e comunidade. O personagem 3D personalizável é a camada emocional que transforma a jornada em uma história própria, sem nunca atrapalhar as informações críticas.
+**Camino 3D é uma peregrinação digital viva: o caminho, o personagem e a comunidade evoluem junto com o peregrino.**
 
-**Posicionamento:** "Tudo o que você precisa para o Caminho, num só lugar, mesmo sem sinal."
+O mapa continua existindo, mas é a infraestrutura invisível. O que a pessoa percebe é uma experiência completa, apoiada em três pilares:
+
+1. **Copiloto que ajuda a decidir:** cruza etapa, ritmo, clima, orçamento, lotação e relatos recentes, e sugere o que fazer ("saia às 7h30 ou termine 6 km antes").
+2. **Mundo 3D da própria jornada:** o peregrino personalizado avança conforme as etapas reais, com região, hora local, clima, chegada a cada cidade e lembranças. Isso gera imagens e vídeos compartilháveis.
+3. **Camino Live:** a experiência coletiva por etapa (quantos estão ali, idiomas, quem quer caminhar junto, condições do trecho), sem expor posições.
+
+Distribuição por criadores de conteúdo e parceiros locais completa o modelo: utilidade real + experiência 3D compartilhável + rede de peregrinos + criadores.
+
+**Posicionamento:** "Não é mais um mapa do Caminho. É a sua peregrinação, viva, do planejamento às memórias."
+
+**Primeira rota de lançamento: Caminho Francês** (maior fluxo e densidade de dados). A demonstração usa o Caminho Português; o modelo de dados é o mesmo, e Português, Primitivo e Norte entram em seguida.
 
 ## 1.2 Problema
 
@@ -25,28 +35,33 @@ Hoje o peregrino combina cinco ou mais aplicativos (guia de etapas, Booking/Goog
 | Média mensal | ~45 mil | **Forte sazonalidade**: maio a outubro concentram a maior parte do fluxo. A média mensal esconde meses de inverno muito fracos. |
 | Conversão | 2,5% a 3% | Benchmark otimista para app pago; validar com teste. |
 | Assinantes | ~1.000 a 1.500/mês | 13,5 mil a 16,2 mil/ano se a conversão se confirmar. |
-| Preço | EUR 10 | Ver discussão abaixo sobre "assinatura" versus "passe por Caminho". |
+| Preço | EUR 10 (proposta inicial) | Revisado para Camino Pass de EUR 14,99 com cupom de EUR 9,99 (ver abaixo). |
 
 **Receita bruta hipotética:** 1.125 a 1.350 assinantes/mês × EUR 10 ≈ EUR 11 mil a 13,5 mil/mês **antes** de taxas (Stripe na web ~1,5% + EUR 0,25; lojas Apple/Google 15% a 30% para compras digitais dentro do app), impostos (IVA europeu) e custos de API.
 
-### Recomendação de PM sobre o preço
+### Decisão de preço: Camino Pass (pagamento único)
 
-Uma jornada típica dura de 1 a 5 semanas. Uma assinatura mensal recorrente tende a gerar cancelamento logo após a chegada a Santiago (churn estrutural). Sugiro testar em paralelo:
+Uma jornada dura de 1 a 5 semanas; assinatura mensal gera cancelamento logo após Santiago. Por isso o produto é um **passe por jornada, sem assinatura**:
 
-- **Passe do Caminho (EUR 10, válido por 45 dias, sem renovação automática)**, alinhado à realidade de uso.
-- **Premium mensal (EUR 10/mês)**, para quem planeja meses antes ou faz vários caminhos.
-- **Plano gratuito**, como funil de aquisição.
+| Produto | Preço no MVP | O que libera |
+|---|---|---|
+| Gratuito | EUR 0 | Explorar rotas, criar o avatar, planejar a viagem, 1 sugestão do copiloto por dia, cartões de etapa com marca d'água |
+| **Camino Pass** | **EUR 14,99** (EUR 9,99 com cupom de lançamento ou de criador) | Jornada liberada para sempre: copiloto completo, offline, Camino Live, retrospectiva, cartões sem marca d'água |
+| Grupo/Família | EUR 34,99 (EUR 29,99 com cupom) | O mesmo para até 4 pessoas, com convites |
+| Outras rotas | novo passe por rota | Francês, Português, Primitivo, Norte… |
 
-O MVP já modela os dois produtos pagos (`Subscription.kind = 'pass' | 'monthly'`) para permitir esse teste A/B.
+- O preço cheio fica acima de EUR 10 porque EUR 10 deixa pouca margem depois de IVA, tarifa, comissão de afiliado (20–25%) e APIs. O painel admin (aba **Economia**) mostra a conta por cenário.
+- Recursos com custo por uso (tradução automática) têm **uso justo** (300 traduções por jornada).
+- Reembolso em até 14 dias (direito europeu de desistência).
+- Meta de conversão: 10% é meta futura sobre visitas qualificadas, não premissa sobre todo o mercado. O funil é medido por etapa: alcance × visitas qualificadas × início da compra × pagamento aprovado.
 
 ## 1.4 Fontes de receita
 
-1. Assinatura Premium / Passe do Caminho (principal no MVP).
-2. Destaques patrocinados de hospedagens, restaurantes, cafés e lojas, **sempre identificados como "Patrocinado"** e **nunca** alterando alertas, recomendações de segurança ou o ranking do modo "Mais segura".
-3. Comissões de reservas via programas de afiliados oficiais (fase 2).
-4. Experiências culturais, transporte de mochila, seguros, apenas com parceiros autorizados (fase 3).
-5. Planos para estabelecimentos e parcerias com municípios e associações (fase 3).
-6. Expansão para outros caminhos (Francês, Primitivo, Norte, Via Francigena) e trilhas europeias.
+1. **Camino Pass** e pacote Grupo/Família (principal).
+2. **Criadores e afiliados:** link `?ref=CODIGO` e cupom próprio, comissão por venda confirmada, painel de cliques/vendas, e **rotas de criadores** ("O Caminho de [criador]", só com autorização de uso do nome).
+3. **Parceiros fundadores** (hospedagens, cafés, restaurantes): cadastro verificado, oferta exclusiva com cupom rastreável, selo, painel de desempenho, cobrança por mês, temporada, clique ou resultado. As ofertas ficam numa seção **separada e marcada como publicidade**; a lista orgânica e o copiloto nunca mudam por pagamento.
+4. Comissões de reservas via programas de afiliados oficiais (fase 2).
+5. Novas rotas e peregrinações (passes adicionais).
 
 ## 1.5 Métricas (estrutura AARRR)
 
@@ -55,8 +70,9 @@ O MVP já modela os dois produtos pagos (`Subscription.kind = 'pass' | 'monthly'
 | Aquisição | `signup_started` | Visitantes → cadastro iniciado |
 | Ativação | `signup_completed`, `onboarding_completed`, `route_created` | % que cria a primeira rota em 24h |
 | Engajamento | `navigation_started`, `accommodation_viewed`, `translation_used`, `location_sharing_enabled`, `pilgrim_connected` | Funcionalidades usadas por sessão |
-| Receita | `booking_click`, `premium_trial_started`, `subscription_completed` | Conversão free → pago, receita por usuário |
-| Retenção | `subscription_cancelled`, `retention_d7`, `retention_d30` | Retenção D7/D30, churn |
+| Receita | `booking_click`, `premium_trial_started`, `subscription_completed` (compra do passe, com cupom) | Conversão free → passe, ticket médio, % de vendas via criadores |
+| Retenção | `subscription_cancelled` (reembolso), `retention_d7`, `retention_d30` | Retenção D7/D30, reembolsos |
+| Indicação | cartões e retrospectivas compartilhados, `?ref=` | Compartilhamentos por usuário, vendas por criador |
 
 Todos os eventos só são enviados com consentimento de analytics (GDPR). O painel administrativo mostra o funil com **dados de demonstração** identificados.
 
@@ -75,8 +91,13 @@ Todos os eventos só são enviados com consentimento de analytics (GDPR). O pain
 - Personagem 3D personalizável (React Three Fiber) com fallback 2D sem WebGL.
 - Diário, carimbos simbólicos e conquistas.
 - Central de Segurança com SOS com confirmação e 112.
-- Planos e assinatura (Stripe quando houver chave, simulação identificada sem chave).
-- Painel administrativo básico: parceiros, patrocínios, moderação, funil.
+- **Camino Pass** de pagamento único, Grupo/Família, cupons de lançamento e de criadores (Stripe quando houver chave, simulação identificada sem chave).
+- **Copiloto do dia** com regras transparentes ("por que esta sugestão?") e replanejamento automático ao encurtar uma etapa.
+- **Camino Live:** contagens por etapa (com anonimato abaixo de 3 pessoas), idiomas, grupos saindo, relatos de condições que expiram em 12 h, convites em locais públicos.
+- **Mundo 3D da jornada** (`/jornada`): região, hora local, clima, arco de chegada, broches de cada cidade, outros peregrinos com consentimento.
+- **Cartões de etapa e retrospectiva** em imagem e vídeo curto, gerados no aparelho.
+- **Rotas de criadores** e painel de afiliados; **parceiros fundadores** com ofertas separadas da lista orgânica.
+- Painel administrativo: métricas, economia por venda, criadores, parceiros e moderação.
 - Camada de provedores substituíveis, cache, rate limiting e fallback.
 
 **Fica para versões futuras:**

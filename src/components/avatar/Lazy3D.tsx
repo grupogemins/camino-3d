@@ -5,6 +5,7 @@ import { useWebGL, usePrefersReducedMotion } from '@/hooks/useWebGL';
 import type { AvatarConfiguration, RouteStop } from '@/lib/domain/types';
 import { useAppStore } from '@/store/useAppStore';
 import { Avatar2D } from './Avatar2D';
+import type { TimeOfDay } from './ExploreScene';
 import type { PilgrimAction, WeatherMood } from './PilgrimModel';
 
 // Three.js/R3F só são baixados quando uma cena 3D é exibida (carregamento sob demanda).
@@ -60,7 +61,25 @@ export function AvatarViewer({ config, action, weather }: { config: AvatarConfig
   );
 }
 
-export function ExploreViewer({ config, region, weather, action, progress }: { config: AvatarConfiguration; region: RouteStop['region']; weather: WeatherMood; action: PilgrimAction; progress?: number }) {
+export function ExploreViewer({
+  config,
+  region,
+  weather,
+  action,
+  progress,
+  timeOfDay,
+  companions,
+  souvenirs,
+}: {
+  config: AvatarConfiguration;
+  region: RouteStop['region'];
+  weather: WeatherMood;
+  action: PilgrimAction;
+  progress?: number;
+  timeOfDay?: TimeOfDay;
+  companions?: AvatarConfiguration[];
+  souvenirs?: number;
+}) {
   const webgl = useWebGL();
   const animate = useAnimate();
   if (webgl === null) return <Loading3D />;
@@ -68,7 +87,7 @@ export function ExploreViewer({ config, region, weather, action, progress }: { c
   if (!webgl) return fallback;
   return (
     <WebGLBoundary fallback={fallback}>
-      <ExploreScene config={config} region={region} weather={weather} action={action} animate={animate} progress={progress} />
+      <ExploreScene config={config} region={region} weather={weather} action={action} animate={animate} progress={progress} timeOfDay={timeOfDay} companions={companions} souvenirs={souvenirs} />
     </WebGLBoundary>
   );
 }

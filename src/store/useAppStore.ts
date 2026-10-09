@@ -7,6 +7,8 @@ import type {
   AvatarConfiguration,
   EmergencyContact,
   JournalEntry,
+  LiveInvite,
+  LiveReport,
   LocationGranularity,
   Message,
   PlanId,
@@ -18,8 +20,8 @@ import type {
   Trip,
   User,
 } from '@/lib/domain/types';
-import { periodEndFor } from '@/lib/billing/plans';
-import { planStages } from '@/lib/planner/planner';
+import { getPlan, trialEndFor } from '@/lib/billing/plans';
+import { planStages, shortenStage } from '@/lib/planner/planner';
 import { preciseExpiry } from '@/lib/privacy/location';
 import { setAnalyticsConsent, track } from '@/lib/analytics/events';
 
@@ -74,6 +76,14 @@ interface AppState {
   achievementsUnlocked: Record<string, string>;
   /** Progresso simulado na rota ativa (km). */
   simulatedKm: number;
+  /** Camino Live: meus relatos, confirmações e convites. */
+  liveReports: LiveReport[];
+  liveVotes: Record<string, 'confirm' | 'gone'>;
+  liveInvites: LiveInvite[];
+  liveGoing: string[];
+  openToWalkTogether: boolean;
+  /** Sugestões do copiloto dispensadas (id → data). */
+  copilotDismissed: Record<string, string>;
 
   signUp: (email: string, displayName: string) => void;
   signIn: (email: string) => void;
@@ -82,13 +92,20 @@ interface AppState {
   updateProfile: (patch: Partial<Profile>) => void;
   updatePrivacy: (patch: Partial<PrivacySettings>) => void;
   setGranularity: (g: LocationGranularity) => void;
-  createTrip: (input: { routeId: string; originId: string; mode: RouteMode; days: number; dailyKm: number; startDate: string }) => Trip | null;
+  createTrip: (input: { routeId: string; originId: string; mode: RouteMode; days: number; dailyKm: number; startDate: string; creatorRouteId?: string }) => Trip | null;
   toggleSegmentDone: (segmentId: string) => void;
   markOfflineDownloaded: () => void;
   setSimulatedKm: (km: number) => void;
   toggleFavorite: (id: string) => void;
   setAvatar: (patch: Partial<AvatarConfiguration>) => void;
-  subscribe: (plan: Exclude<PlanId, 'free'>, provider: Subscription['provider'], trial?: boolean) => void;
+  subscribe: (plan: Exclude<PlanId, 'free'>, provider: Subscription['provider'], opts?: { trial?: boolean; couponCode?: string; amountPaidEur?: number; affiliateId?: string }) => void;
+  shortenSegment: (segmentId: string, newEndStopId: string) => boolean;
+  addLiveReport: (r: Pick<LiveReport, 'stopId' | 'kind' | 'note'>) => void;
+  voteLiveReport: (id: string, vote: 'confirm' | 'gone') => void;
+  addLiveInvite: (i: Pick<LiveInvite, 'stopId' | 'kind' | 'title' | 'placeName' | 'startsAt'>) => void;
+  toggleGoing: (inviteId: string) => void;
+  setOpenToWalkTogether: (v: boolean) => void;
+  dismissCopilot: (id: string) => void;
   cancelSubscription: () => void;
   addJournal: (e: Omit<JournalEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
   removeJournal: (id: string) => void;
@@ -138,6 +155,12 @@ const initialData = () => ({
   anonymousId: uid(),
   achievementsUnlocked: {},
   simulatedKm: 0,
+  liveReports: [] as LiveReport[],
+  liveVotes: {} as Record<string, 'confirm' | 'gone'>,
+  liveInvites: [] as LiveInvite[],
+  liveGoing: [] as string[],
+  openToWalkTogether: false,
+  copilotDismissed: {} as Record<string, string>,
 });
 
 /**
@@ -188,7 +211,7 @@ export const useAppStore = create<AppState>()(
         if (g !== 'hidden') track('location_sharing_enabled', { granularity: g });
       },
 
-      createTrip: ({ routeId, originId, mode, days, dailyKm, startDate }) => {
+      createTrip: ({ routeId, originId, mode, days, dailyKm, startDate, creatorRouteId }) => {
         const route = getRoute(routeId);
         if (!route) return null;
         const fitness = get().profile?.fitness ?? 'intermediate';
@@ -204,6 +227,8 @@ export const useAppStore = create<AppState>()(
           segments: plan.segments,
           status: 'planned',
           completedSegmentIds: [],
+          completedAt: {},
+          creatorRouteId,
           createdAt: nowIso(),
           updatedAt: nowIso(),
         };
@@ -217,7 +242,10 @@ export const useAppStore = create<AppState>()(
         if (!trip) return;
         const done = trip.completedSegmentIds.includes(segmentId) ? trip.completedSegmentIds.filter((s) => s !== segmentId) : [...trip.completedSegmentIds, segmentId];
         const status = done.length === trip.segments.length ? 'completed' : done.length ? 'active' : 'planned';
-        set({ trip: { ...trip, completedSegmentIds: done, status, updatedAt: nowIso() } });
+        const completedAt = { ...(trip.completedAt ?? {}) };
+        if (done.includes(segmentId)) completedAt[segmentId] = nowIso();
+        else delete completedAt[segmentId];
+        set({ trip: { ...trip, completedSegmentIds: done, completedAt, status, updatedAt: nowIso() } });
         const walked = trip.segments.filter((s) => done.includes(s.id)).reduce((a, s) => a + s.distanceKm, 0);
         if (done.length) get().unlock('first_stage');
         if (walked >= 50) get().unlock('km_50');
@@ -236,20 +264,55 @@ export const useAppStore = create<AppState>()(
       },
       setAvatar: (patch) => set({ avatar: { ...get().avatar, ...patch } }),
 
-      subscribe: (plan, provider, trial = false) => {
+      subscribe: (plan, provider, opts = {}) => {
+        const trial = Boolean(opts.trial);
+        const seats = getPlan(plan).seats;
         const sub: Subscription = {
           id: uid(),
           userId: get().user?.id ?? 'local',
           plan,
           status: trial ? 'trialing' : 'active',
-          currentPeriodEnd: trial ? new Date(Date.now() + 7 * 86_400_000).toISOString() : periodEndFor(plan),
+          // O passe pago não expira; só o teste tem data de fim.
+          currentPeriodEnd: trial ? trialEndFor() : undefined,
+          routeFamily: 'caminho-portugues',
+          amountPaidEur: trial ? 0 : opts.amountPaidEur ?? getPlan(plan).priceEur,
+          couponCode: opts.couponCode,
+          affiliateId: opts.affiliateId,
+          seats,
+          inviteCodes: seats > 1 ? Array.from({ length: seats - 1 }, () => `CP-${uid().slice(0, 6).toUpperCase()}`) : undefined,
           provider,
           createdAt: nowIso(),
           updatedAt: nowIso(),
         };
         set({ subscription: sub });
-        track(trial ? 'premium_trial_started' : 'subscription_completed', { plan, provider });
+        track(trial ? 'premium_trial_started' : 'subscription_completed', { plan, provider, coupon: opts.couponCode ?? '' });
       },
+      shortenSegment: (segmentId, newEndStopId) => {
+        const trip = get().trip;
+        const route = trip && getRoute(trip.routeId);
+        if (!trip || !route) return false;
+        const segments = shortenStage(route, trip.segments, segmentId, newEndStopId, { daysTotal: trip.days, dailyKm: trip.dailyKm, fitness: get().profile?.fitness ?? 'intermediate' });
+        if (!segments) return false;
+        set({ trip: { ...trip, segments, updatedAt: nowIso() } });
+        track('route_created', { routeId: trip.routeId, mode: trip.mode, days: trip.days, replanned: true });
+        return true;
+      },
+      addLiveReport: (r) => {
+        const trip = get().trip;
+        const report: LiveReport = { ...r, id: uid(), routeId: trip?.routeId ?? 'central', createdAt: nowIso(), expiresAt: new Date(Date.now() + 12 * 3_600_000).toISOString(), confirmations: 0, authorIsMe: true, isDemo: false };
+        set({ liveReports: [report, ...get().liveReports] });
+      },
+      voteLiveReport: (id, vote) => set({ liveVotes: { ...get().liveVotes, [id]: vote } }),
+      addLiveInvite: (i) => {
+        const invite: LiveInvite = { ...i, id: uid(), going: 1, hostName: get().profile?.displayName ?? 'Você', hostIsMe: true, isDemo: false };
+        set({ liveInvites: [invite, ...get().liveInvites], liveGoing: [...get().liveGoing, invite.id] });
+      },
+      toggleGoing: (inviteId) => {
+        const g = get().liveGoing;
+        set({ liveGoing: g.includes(inviteId) ? g.filter((x) => x !== inviteId) : [...g, inviteId] });
+      },
+      setOpenToWalkTogether: (v) => set({ openToWalkTogether: v }),
+      dismissCopilot: (id) => set({ copilotDismissed: { ...get().copilotDismissed, [id]: nowIso() } }),
       cancelSubscription: () => {
         const s = get().subscription;
         if (!s) return;
@@ -332,7 +395,14 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: 'camino-3d',
-      version: 1,
+      version: 2,
+      // v1 → v2: assinatura mensal virou Camino Pass (pagamento único).
+      migrate: (persisted, version) => {
+        const st = persisted as Record<string, unknown>;
+        const sub = st.subscription as { plan: string } | null | undefined;
+        if (version < 2 && sub?.plan === 'monthly') st.subscription = { ...sub, plan: 'pass', currentPeriodEnd: undefined };
+        return st as unknown as AppState;
+      },
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (state) setAnalyticsConsent(state.privacy.consentAnalytics);

@@ -110,11 +110,11 @@ export function ChipGroup<T extends string>({ label, options, value, onChange, s
 export function Segmented<T extends string>({ label, options, value, onChange, hideLabel }: { label: string; options: { id: T; label: string }[]; value: T; onChange: (v: T) => void; hideLabel?: boolean }) {
   const name = useId();
   return (
-    <fieldset>
+    <fieldset className="min-w-0">
       <legend className={hideLabel ? 'sr-only' : 'mb-2 font-semibold'}>{label}</legend>
-      <div className="flex rounded-2xl border-2 border-line bg-surface-2 p-1">
+      <div className="flex overflow-x-auto rounded-2xl border-2 border-line bg-surface-2 p-1">
         {options.map((o) => (
-          <label key={o.id} className={clsx('flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-xl px-2 text-center text-sm font-semibold', value === o.id ? 'bg-surface text-primary shadow' : 'text-muted')}>
+          <label key={o.id} className={clsx('flex min-h-11 flex-1 shrink-0 cursor-pointer whitespace-nowrap items-center justify-center rounded-xl px-2 text-center text-sm font-semibold', value === o.id ? 'bg-surface text-primary shadow' : 'text-muted')}>
             <input type="radio" className="sr-only" name={name} value={o.id} checked={value === o.id} onChange={() => onChange(o.id)} />
             {o.label}
           </label>

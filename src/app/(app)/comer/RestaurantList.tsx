@@ -9,7 +9,7 @@ import { StopPicker } from '@/components/places/StopPicker';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ChipGroup, RangeField, Switch } from '@/components/ui/Controls';
-import { DemoBadge, SourceLine, SponsoredBadge } from '@/components/ui/DataSource';
+import { DemoBadge, SourceLine } from '@/components/ui/DataSource';
 import { EmptyState, ErrorState, LoadingState, OfflineState } from '@/components/ui/States';
 import { useApi } from '@/hooks/useApi';
 import { usePlan } from '@/hooks/usePlan';
@@ -17,7 +17,8 @@ import { useTripContext } from '@/hooks/useTripContext';
 import { FREE_LIMITS } from '@/lib/billing/plans';
 import type { Restaurant } from '@/lib/domain/types';
 import { filterRestaurants, limitPerStop, type RestaurantFilters } from '@/lib/filters';
-import { isSponsoredActive, rankPlaces } from '@/lib/ranking';
+import { rankOrganic } from '@/lib/ranking';
+import { PartnerOffers } from '@/components/places/PartnerOffers';
 
 const KIND = { cafe: 'Café', restaurant: 'Restaurante', bar: 'Bar', bakery: 'Padaria' } as const;
 
@@ -29,7 +30,7 @@ export function RestaurantList() {
   const res = useApi<Restaurant[]>(`/api/places/restaurants?stopIds=${stopIds.join(',')}`);
   const set = (p: Partial<RestaurantFilters>) => setF((x) => ({ ...x, ...p }));
   const { visible, hidden } = useMemo(() => {
-    const list = rankPlaces(filterRestaurants(res.data ?? [], f));
+    const list = rankOrganic(filterRestaurants(res.data ?? [], f));
     return isPremium ? { visible: list, hidden: 0 } : limitPerStop(list, FREE_LIMITS.placesPerCategory);
   }, [res.data, f, isPremium]);
 
@@ -67,7 +68,7 @@ export function RestaurantList() {
             <RangeField label="Preço médio máximo" value={f.maxPrice} min={3} max={30} unit="EUR" onChange={(maxPrice) => set({ maxPrice })} />
           </>
         ) : (
-          <PremiumHint>Filtros por serviços (água, banheiro, tomadas, Wi-Fi) e preço estão no Premium.</PremiumHint>
+          <PremiumHint>Filtros por serviços (água, banheiro, tomadas, Wi-Fi) e preço estão no Camino Pass.</PremiumHint>
         )}
 
         {res.status === 'loading' && <LoadingState label="Carregando lugares" />}
@@ -75,6 +76,7 @@ export function RestaurantList() {
         {res.status === 'offline' && <OfflineState />}
         {res.data && visible.length === 0 && <EmptyState icon={<UtensilsCrossed aria-hidden size={32} className="text-muted" />} title="Nada encontrado com esses filtros" />}
 
+        {res.data && <PartnerOffers places={res.data.filter((p) => f.stopId === 'all' || p.stopId === f.stopId)} />}
         <ul className="flex flex-col gap-3">
           {visible.map((r) => (
             <li key={r.id}>
@@ -84,7 +86,6 @@ export function RestaurantList() {
                     <div className="flex flex-wrap gap-1.5">
                       <Badge tone="terracotta">{KIND[r.kind]}</Badge>
                       {r.pilgrimMenu && <Badge tone="green">Menu do peregrino</Badge>}
-                      {isSponsoredActive(r) && <SponsoredBadge />}
                     </div>
                     <h2 id={`r-${r.id}`} className="mt-1 text-lg font-bold">{r.name}</h2>
                     <p className="flex items-center gap-1 text-sm text-muted"><MapPin aria-hidden size={14} />{r.town} · {r.distanceFromRouteKm} km da rota · {r.cuisine}</p>
@@ -111,7 +112,7 @@ export function RestaurantList() {
             </li>
           ))}
         </ul>
-        {hidden > 0 && <PremiumHint>Mais {hidden} lugares no Premium.</PremiumHint>}
+        {hidden > 0 && <PremiumHint>Mais {hidden} lugares no Camino Pass.</PremiumHint>}
       </div>
     </>
   );

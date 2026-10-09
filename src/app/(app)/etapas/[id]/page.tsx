@@ -7,6 +7,7 @@ import { ElevationProfile } from '@/components/trip/ElevationProfile';
 import { RouteAlerts } from '@/components/trip/RouteAlerts';
 import { Badge } from '@/components/ui/Badge';
 import { Button, ButtonLink } from '@/components/ui/Button';
+import { Sparkles } from 'lucide-react';
 import { Card, SectionTitle, Stat } from '@/components/ui/Card';
 import { DemoBadge } from '@/components/ui/DataSource';
 import { EmptyState } from '@/components/ui/States';
@@ -64,6 +65,11 @@ export default function StageDetailPage() {
           {done ? 'Concluída' : 'Marcar concluída'}
         </Button>
       </div>
+      {done && (
+        <ButtonLink href={`/cartao/${segment.id}`} variant="secondary" block className="mt-3" icon={<Sparkles aria-hidden />}>
+          Criar cartão da etapa
+        </ButtonLink>
+      )}
 
       <Card className="mt-4">
         <ElevationProfile route={route} startKm={segment.startKm} endKm={segment.endKm} />

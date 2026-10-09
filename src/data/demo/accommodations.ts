@@ -2,7 +2,7 @@
 import type { Accommodation, AccommodationType, BookingProvider } from '@/lib/domain/types';
 import { demoProvenance, demoProvenanceFrom } from './provenance';
 import { between, hashString, pick, seeded } from './seed';
-import { sponsoredPlacement } from './sponsors';
+import { partnerOffer, sponsoredPlacement } from './sponsors';
 import { allStops } from './stops';
 
 const NAMES: Record<AccommodationType, string[]> = {
@@ -58,6 +58,7 @@ export const accommodations: Accommodation[] = allStops
         accessible: type === 'hotel' || rnd() > 0.65,
         review: { rating: between(rnd, 3.7, 4.9, 1), count: Math.round(between(rnd, 8, 900)), ...demoProvenanceFrom('Avaliações') },
         sponsored,
+        partnerOffer: sponsored ? partnerOffer('sp-1', id) : undefined,
         provenance: demoProvenance,
         price: {
           amount,

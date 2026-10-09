@@ -1,9 +1,10 @@
 'use client';
 import { Flag, MessageCircle, ShieldBan, UserPlus, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useMemo, useState } from 'react';
 import { Avatar2D } from '@/components/avatar/Avatar2D';
+import { LivePanel } from '@/components/community/LivePanel';
 import { PrivacyControls } from '@/components/community/PrivacyControls';
 import { TopBar } from '@/components/layout/TopBar';
 import { SchematicMap } from '@/components/map/SchematicMap';
@@ -34,7 +35,16 @@ const REASONS = [
 ] as const;
 
 export default function ComunidadePage() {
+  return (
+    <Suspense>
+      <Comunidade />
+    </Suspense>
+  );
+}
+
+function Comunidade() {
   const router = useRouter();
+  const params = useSearchParams();
   const { route } = useTripContext();
   const { can } = usePlan();
   const connections = useAppStore((s) => s.connections);
@@ -46,7 +56,10 @@ export default function ComunidadePage() {
   const unblock = useAppStore((s) => s.unblock);
   const report = useAppStore((s) => s.report);
   const ensureChat = useAppStore((s) => s.ensureChat);
-  const [tab, setTab] = useState<'people' | 'groups' | 'privacy'>('people');
+  const [tab, setTab] = useState<'live' | 'people' | 'groups' | 'privacy'>(() => {
+    const aba = params.get('aba');
+    return aba === 'peregrinos' ? 'people' : aba === 'grupos' ? 'groups' : aba === 'visibilidade' ? 'privacy' : 'live';
+  });
   const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [langs, setLangs] = useState<string[]>([]);
   const [reportTarget, setReportTarget] = useState<PublicPilgrim | null>(null);
@@ -77,9 +90,10 @@ export default function ComunidadePage() {
   return (
     <>
       <TopBar title="Comunidade" actions={<DemoBadge compact />} />
-      <Segmented label="Seção" hideLabel value={tab} onChange={setTab} options={[{ id: 'people', label: 'Peregrinos' }, { id: 'groups', label: 'Grupos' }, { id: 'privacy', label: 'Minha visibilidade' }]} />
+      <Segmented label="Seção" hideLabel value={tab} onChange={setTab} options={[{ id: 'live', label: 'Ao vivo' }, { id: 'people', label: 'Peregrinos' }, { id: 'groups', label: 'Grupos' }, { id: 'privacy', label: 'Privacidade' }]} />
       {toast && <div className="mt-3"><Notice tone="success">{toast}</Notice></div>}
 
+      {tab === 'live' && <div className="mt-3"><LivePanel /></div>}
       {tab === 'privacy' && <div className="mt-3"><PrivacyControls /></div>}
 
       {tab === 'people' && (
@@ -160,7 +174,7 @@ export default function ComunidadePage() {
 
       {tab === 'groups' && (
         <div className="mt-3 flex flex-col gap-3">
-          {!can('community_advanced') && <PremiumHint>Grupos por etapa e cidade fazem parte da comunidade avançada (Premium). No gratuito você conversa com conexões individuais.</PremiumHint>}
+          {!can('community_advanced') && <PremiumHint>Grupos por etapa e cidade fazem parte da comunidade avançada (Camino Pass). No gratuito você conversa com conexões individuais.</PremiumHint>}
           <ul className="flex flex-col gap-2">
             {demoGroups.map((g) => (
               <li key={g.id}>
@@ -173,7 +187,7 @@ export default function ComunidadePage() {
                   {can('community_advanced') ? (
                     <Button variant="secondary" onClick={() => { ensureChat(g.id, g.title, 'group'); router.push(`/comunidade/chat/${g.id}`); }}>Entrar</Button>
                   ) : (
-                    <Link href="/premium" className="text-sm font-bold text-primary">Premium</Link>
+                    <Link href="/premium" className="text-sm font-bold text-primary">Camino Pass</Link>
                   )}
                 </Card>
               </li>

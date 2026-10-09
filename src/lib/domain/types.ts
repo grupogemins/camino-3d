@@ -196,7 +196,39 @@ export interface Trip extends Timestamps {
   segments: RouteSegment[];
   status: 'planned' | 'active' | 'completed' | 'abandoned';
   completedSegmentIds: string[];
+  /** Quando cada etapa foi concluída (para cartões e retrospectiva). */
+  completedAt?: Record<string, ISODate>;
+  /** Rota de criador usada como camada de dicas. */
+  creatorRouteId?: string;
   offlineDownloadedAt?: ISODate;
+}
+
+/** Relato da comunidade sobre um trecho (Camino Live). Expira sozinho. */
+export interface LiveReport {
+  id: string;
+  routeId: string;
+  stopId: string;
+  kind: 'mud' | 'no_water' | 'works' | 'closed' | 'queue' | 'crowded' | 'tip';
+  note: string;
+  createdAt: ISODate;
+  expiresAt: ISODate;
+  confirmations: number;
+  authorIsMe?: boolean;
+  isDemo: boolean;
+}
+
+/** Convite aberto para café, jantar, evento ou caminhar junto. Somente locais públicos. */
+export interface LiveInvite {
+  id: string;
+  stopId: string;
+  kind: 'walk' | 'coffee' | 'dinner' | 'event';
+  title: string;
+  placeName: string;
+  startsAt: ISODate;
+  going: number;
+  hostName: string;
+  hostIsMe?: boolean;
+  isDemo: boolean;
 }
 
 // ---------- Lugares ----------
@@ -234,6 +266,7 @@ interface PlaceBase {
   accessible: boolean;
   review?: ReviewSummary;
   sponsored?: SponsoredPlacement;
+  partnerOffer?: PartnerOffer;
   provenance: DataProvenance;
 }
 
@@ -474,14 +507,26 @@ export interface Achievement {
 
 // ---------- Comercial ----------
 
-export type PlanId = 'free' | 'pass' | 'monthly';
+/** Camino Pass: pagamento único por jornada (sem assinatura). 'group' = pacote Grupo/Família. */
+export type PlanId = 'free' | 'pass' | 'group';
 
 export interface Subscription extends Timestamps {
   id: string;
   userId: string;
   plan: PlanId;
+  /** 'cancelled' = reembolsado. O passe não expira: a jornada comprada fica liberada para sempre. */
   status: 'trialing' | 'active' | 'cancelled' | 'expired';
+  /** Só o teste gratuito tem fim; o passe pago não tem. */
   currentPeriodEnd?: ISODate;
+  /** Rota (jornada) liberada pela compra. */
+  routeFamily?: string;
+  amountPaidEur?: number;
+  couponCode?: string;
+  /** Afiliado/criador que originou a venda (para comissão). */
+  affiliateId?: string;
+  /** Pacote Grupo/Família: lugares e convites. */
+  seats?: number;
+  inviteCodes?: string[];
   provider: 'stripe' | 'apple' | 'google' | 'demo';
   providerRef?: string;
 }
@@ -492,6 +537,47 @@ export interface Sponsor extends Timestamps {
   category: 'accommodation' | 'restaurant' | 'shop' | 'service';
   contactEmail: string;
   status: 'lead' | 'active' | 'paused';
+  /** Parceiro fundador: cadastro verificado, oferta exclusiva e painel de desempenho. */
+  tier?: 'founding' | 'standard';
+  verified?: boolean;
+  pricing?: 'monthly' | 'season' | 'per_click' | 'per_result';
+}
+
+/** Afiliado ou criador de conteúdo com link e cupom próprios. */
+export interface Affiliate {
+  id: string;
+  name: string;
+  channel: 'youtube' | 'instagram' | 'tiktok' | 'blog' | 'agency';
+  code: string;
+  /** Fração da receita líquida paga como comissão (ex.: 0.25). */
+  commissionRate: number;
+  status: 'active' | 'pending' | 'paused';
+  /** O uso do nome em "O Caminho de ..." exige autorização por escrito. */
+  nameUseAuthorized: boolean;
+  stats: { clicks: number; checkouts: number; sales: number };
+  isDemo: boolean;
+}
+
+/** Rota recomendada por um criador: sobreposição de dicas e lugares favoritos sobre uma rota base. */
+export interface CreatorRoute {
+  id: string;
+  affiliateId: string;
+  title: string;
+  baseRouteId: string;
+  summary: string;
+  videoUrl?: string;
+  tips: { stopId: string; text: string; placeIds?: string[] }[];
+  isDemo: boolean;
+}
+
+/** Oferta de parceiro fundador: sempre exibida separada das recomendações orgânicas. */
+export interface PartnerOffer {
+  id: string;
+  sponsorId: string;
+  placeId: string;
+  title: string;
+  couponCode: string;
+  validUntil: ISODate;
 }
 
 export interface SponsoredPlacement {

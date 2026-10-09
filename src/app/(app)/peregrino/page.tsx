@@ -26,7 +26,7 @@ function Swatches({ label, colors, value, onChange, locked }: { label: string; c
               type="button"
               onClick={() => !isLocked && onChange(c)}
               aria-pressed={value === c}
-              aria-label={`${label}: cor ${i + 1}${isLocked ? ' (Premium)' : ''}`}
+              aria-label={`${label}: cor ${i + 1}${isLocked ? ' (Camino Pass)' : ''}`}
               disabled={isLocked}
               className={`relative h-11 w-11 rounded-full border-4 ${value === c ? 'border-primary' : 'border-surface'} shadow disabled:opacity-40`}
               style={{ backgroundColor: c }}
@@ -85,9 +85,9 @@ export default function PeregrinoPage() {
           label="Acessórios"
           value={avatar.accessories}
           onChange={(v) => set({ accessories: extended ? v : v.filter((a) => a === 'shell' || a === 'bandana') })}
-          options={[{ id: 'shell', label: 'Vieira' }, { id: 'bandana', label: 'Bandana' }, { id: 'gourd', label: `Cabaça${extended ? '' : ' (Premium)'}` }, { id: 'sunglasses', label: `Óculos de sol${extended ? '' : ' (Premium)'}` }]}
+          options={[{ id: 'shell', label: 'Vieira' }, { id: 'bandana', label: 'Bandana' }, { id: 'gourd', label: `Cabaça${extended ? '' : ' (Camino Pass)'}` }, { id: 'sunglasses', label: `Óculos de sol${extended ? '' : ' (Camino Pass)'}` }]}
         />
-        {!extended && <PremiumHint>Cores extras e acessórios especiais fazem parte da personalização ampliada (Premium).</PremiumHint>}
+        {!extended && <PremiumHint>Cores extras e acessórios especiais fazem parte da personalização ampliada (Camino Pass).</PremiumHint>}
       </Card>
       <Button className="mt-4" variant="outline" block onClick={() => setAvatar(DEFAULT_AVATAR)} icon={<RotateCcw aria-hidden />}>Restaurar padrão</Button>
     </>

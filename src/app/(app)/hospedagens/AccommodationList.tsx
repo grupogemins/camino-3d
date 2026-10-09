@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ChipGroup, RangeField, Switch } from '@/components/ui/Controls';
-import { DemoBadge, SourceLine, SponsoredBadge } from '@/components/ui/DataSource';
+import { DemoBadge, SourceLine } from '@/components/ui/DataSource';
 import { EmptyState, ErrorState, LoadingState, OfflineState } from '@/components/ui/States';
 import { useApi } from '@/hooks/useApi';
 import { usePlan } from '@/hooks/usePlan';
@@ -20,7 +20,8 @@ import { FREE_LIMITS } from '@/lib/billing/plans';
 import type { Accommodation, AccommodationType } from '@/lib/domain/types';
 import { DEFAULT_ACC_FILTERS, filterAccommodations, limitPerStop, type AccommodationFilters, type AmenityKey } from '@/lib/filters';
 import { ACCOMMODATION_LABEL, AVAILABILITY_LABEL } from '@/lib/labels';
-import { isSponsoredActive, rankPlaces } from '@/lib/ranking';
+import { rankOrganic } from '@/lib/ranking';
+import { PartnerOffers } from '@/components/places/PartnerOffers';
 
 const AMENITIES: { id: AmenityKey; label: string }[] = [
   { id: 'breakfast', label: 'Café da manhã' },
@@ -45,7 +46,7 @@ export function AccommodationList() {
   const set = (patch: Partial<AccommodationFilters>) => setFilters((f) => ({ ...f, ...patch }));
 
   const { visible, hidden } = useMemo(() => {
-    const filtered = rankPlaces(filterAccommodations(res.data ?? [], filters));
+    const filtered = rankOrganic(filterAccommodations(res.data ?? [], filters));
     return isPremium ? { visible: filtered, hidden: 0 } : limitPerStop(filtered, FREE_LIMITS.placesPerCategory);
   }, [res.data, filters, isPremium]);
 
@@ -82,7 +83,7 @@ export function AccommodationList() {
                 />
               </>
             ) : (
-              <PremiumHint>Filtros por distância, avaliação, disponibilidade, comodidades e check-in estão no Premium.</PremiumHint>
+              <PremiumHint>Filtros por distância, avaliação, disponibilidade, comodidades e check-in estão no Camino Pass.</PremiumHint>
             )}
           </Card>
         )}
@@ -95,15 +96,15 @@ export function AccommodationList() {
 
         {res.data && visible.length === 0 && <EmptyState icon={<BedDouble aria-hidden className="text-muted" size={32} />} title="Nenhuma hospedagem com esses filtros" description="Tente aumentar o preço máximo ou remover comodidades." action={<Button variant="outline" onClick={() => setFilters({ ...DEFAULT_ACC_FILTERS, stopId: filters.stopId })}>Limpar filtros</Button>} />}
 
+        {res.data && <PartnerOffers places={res.data.filter((p) => filters.stopId === 'all' || p.stopId === filters.stopId)} basePath='/hospedagens' />}
         <ul className="flex flex-col gap-3">
           {visible.map((a) => (
             <li key={a.id}>
-              <Card as="article" aria-labelledby={`acc-${a.id}`} className={isSponsoredActive(a) ? 'border-blue' : ''}>
+              <Card as="article" aria-labelledby={`acc-${a.id}`}>
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap gap-1.5">
                       <Badge tone="green">{ACCOMMODATION_LABEL[a.type]}</Badge>
-                      {isSponsoredActive(a) && <SponsoredBadge />}
                       <Badge tone={a.availability === 'full' ? 'danger' : a.availability === 'limited' ? 'warning' : 'neutral'}>{AVAILABILITY_LABEL[a.availability]}</Badge>
                     </div>
                     <h2 id={`acc-${a.id}`} className="mt-1 text-lg font-bold">
@@ -126,8 +127,8 @@ export function AccommodationList() {
             </li>
           ))}
         </ul>
-        {hidden > 0 && <PremiumHint>Mais {hidden} hospedagens disponíveis no Premium (o plano gratuito mostra até {FREE_LIMITS.placesPerCategory} por parada).</PremiumHint>}
-        <p className="text-xs text-muted">Destaques &quot;Patrocinado&quot; são publicidade e nunca alteram alertas de segurança. Avaliações e preços desta versão são fictícios.</p>
+        {hidden > 0 && <PremiumHint>Mais {hidden} hospedagens disponíveis no Camino Pass (o plano gratuito mostra até {FREE_LIMITS.placesPerCategory} por parada).</PremiumHint>}
+        <p className="text-xs text-muted">Ofertas de parceiros são publicidade, ficam separadas e nunca alteram a ordem da lista nem alertas de segurança. Avaliações e preços desta versão são fictícios.</p>
       </div>
     </>
   );

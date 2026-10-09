@@ -153,7 +153,7 @@ export default function TradutorPage() {
         <label htmlFor="src-text" className="font-semibold">Texto</label>
         <textarea id="src-text" value={text} onChange={(e) => setText(e.target.value)} rows={3} className="rounded-xl border-2 border-line bg-surface p-3 text-lg" placeholder="Ex.: Onde fica a farmácia?" />
         {limitReached ? (
-          <PremiumHint>Você usou as {FREE_DEMO_TRANSLATIONS} traduções de demonstração. O tradutor por voz completo está no Premium; as frases essenciais seguem grátis e offline.</PremiumHint>
+          <PremiumHint>Você usou as {FREE_DEMO_TRANSLATIONS} traduções de demonstração. O tradutor por voz completo está no Camino Pass; as frases essenciais seguem grátis e offline.</PremiumHint>
         ) : (
           <Button size="lg" block onClick={translate} disabled={busy} icon={<Languages aria-hidden />}>
             {busy ? 'Traduzindo…' : 'Traduzir'}

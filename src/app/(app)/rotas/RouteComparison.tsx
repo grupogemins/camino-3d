@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { ChipGroup } from '@/components/ui/Controls';
 import { DemoBadge, SourceLine } from '@/components/ui/DataSource';
 import { Notice } from '@/components/ui/States';
+import { demoAffiliates, demoCreatorRoutes } from '@/data/demo/affiliates';
 import { routes } from '@/data/demo/routes';
 import { usePlan } from '@/hooks/usePlan';
 import type { RouteMode } from '@/lib/domain/types';
@@ -97,7 +98,7 @@ export function RouteComparison() {
                 <div className="mt-3">
                   {advancedLocked ? (
                     <ButtonLink href="/premium" variant="secondary" block icon={<Crown aria-hidden size={18} />}>
-                      Rotas alternativas no Premium
+                      Rotas alternativas no Camino Pass
                     </ButtonLink>
                   ) : (
                     <Button block variant={idx === 0 ? 'primary' : 'outline'} onClick={() => choose(route.id)} disabled={!plan.segments.length}>
@@ -110,6 +111,28 @@ export function RouteComparison() {
           );
         })}
       </ol>
+      <h2 className="mt-6 text-xl font-extrabold">Rotas de criadores</h2>
+      <p className="text-sm text-muted">Versões comentadas por criadores de conteúdo parceiros, com dicas e lugares favoritos por parada.</p>
+      <ul className="mt-3 flex flex-col gap-3">
+        {demoCreatorRoutes.map((cr) => {
+          const author = demoAffiliates.find((a) => a.id === cr.affiliateId);
+          if (!author?.nameUseAuthorized) return null;
+          return (
+            <li key={cr.id}>
+              <Card as="article" className="flex flex-col gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-bold">{cr.title}</h3>
+                  <Badge tone="terracotta">Rota de criador</Badge>
+                  {cr.isDemo && <DemoBadge compact />}
+                </div>
+                <p className="text-sm text-muted">Por {author.name} · base: {routes.find((r) => r.id === cr.baseRouteId)?.name}</p>
+                <p>{cr.summary}</p>
+                <ButtonLink href={`/rotas/criadores/${cr.id}?origin=${origin}&days=${days}&km=${km}&start=${start}`} variant="outline">Ver dicas da rota</ButtonLink>
+              </Card>
+            </li>
+          );
+        })}
+      </ul>
       <p className="mt-4 text-xs text-muted">Traçados simplificados para demonstração. No Caminho, siga sempre as setas amarelas e a sinalização oficial.</p>
     </>
   );

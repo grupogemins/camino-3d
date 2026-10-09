@@ -8,7 +8,7 @@ import { FavoriteButton, Price, Rating } from '@/components/places/PlaceBits';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, SectionTitle } from '@/components/ui/Card';
-import { DemoBadge, SourceLine, SponsoredBadge } from '@/components/ui/DataSource';
+import { DemoBadge, SourceLine } from '@/components/ui/DataSource';
 import { Dialog } from '@/components/ui/Dialog';
 import { ErrorState, LoadingState, Notice, OfflineState } from '@/components/ui/States';
 import { useApi } from '@/hooks/useApi';
@@ -50,11 +50,18 @@ export default function AccommodationDetailPage() {
       <TopBar title={a.name} subtitle={a.town} back actions={<FavoriteButton id={a.id} name={a.name} />} />
       <div className="flex flex-wrap gap-1.5">
         <Badge tone="green">{ACCOMMODATION_LABEL[a.type]}</Badge>
-        {isSponsoredActive(a) && <SponsoredBadge />}
+        {isSponsoredActive(a) && <Badge tone="gold">Parceiro fundador</Badge>}
         {a.accessible && <Badge tone="blue">Acessível</Badge>}
         <DemoBadge />
       </div>
       <p className="mt-3">{a.description}</p>
+      {a.partnerOffer && (
+        <div className="mt-3 rounded-2xl border-2 border-dashed border-blue bg-blue-soft p-3">
+          <p className="flex items-center justify-between gap-2 font-bold">Oferta para peregrinos <span className="rounded-full bg-surface px-2 py-0.5 text-xs text-blue">Publicidade</span></p>
+          <p>{a.partnerOffer.title}</p>
+          <p className="mt-1 text-sm">Mostre o cupom <b className="font-mono">{a.partnerOffer.couponCode}</b> no check-in. Válido até {new Date(a.partnerOffer.validUntil).toLocaleDateString('pt-BR')}.</p>
+        </div>
+      )}
 
       <Card className="mt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">

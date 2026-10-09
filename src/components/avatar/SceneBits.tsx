@@ -155,3 +155,52 @@ export function Cruceiro({ position }: { position: [number, number, number] }) {
     </group>
   );
 }
+
+/** Arco de pedra na entrada da cidade de chegada. */
+export function CityGate({ position, rotation = 0 }: { position: [number, number, number]; rotation?: number }) {
+  const stone = '#c9c0ae';
+  return (
+    <group position={position} rotation={[0, rotation, 0]}>
+      {[-1.9, 1.9].map((x) => (
+        <mesh key={x} position={[x, 1.6, 0]} castShadow>
+          <boxGeometry args={[0.7, 3.2, 0.7]} />
+          <meshStandardMaterial color={stone} roughness={0.95} />
+        </mesh>
+      ))}
+      <mesh position={[0, 3.45, 0]} castShadow>
+        <boxGeometry args={[4.5, 0.6, 0.8]} />
+        <meshStandardMaterial color={stone} roughness={0.95} />
+      </mesh>
+      {/* vieira dourada no topo */}
+      <mesh position={[0, 3.6, 0.42]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 0.3, 1.1]}>
+        <sphereGeometry args={[0.28, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#d4a017" metalness={0.5} roughness={0.4} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Silhueta estilizada de catedral com duas torres (chegada a Santiago). */
+export function CathedralSilhouette({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  const c = '#b9ab92';
+  return (
+    <group position={position} scale={scale}>
+      <mesh position={[0, 4, 0]}>
+        <boxGeometry args={[9, 8, 5]} />
+        <meshStandardMaterial color={c} roughness={1} />
+      </mesh>
+      {[-3.6, 3.6].map((x) => (
+        <group key={x} position={[x, 0, 1]}>
+          <mesh position={[0, 8, 0]}>
+            <boxGeometry args={[2.4, 16, 2.4]} />
+            <meshStandardMaterial color={c} roughness={1} />
+          </mesh>
+          <mesh position={[0, 17.5, 0]}>
+            <coneGeometry args={[1.4, 3, 8]} />
+            <meshStandardMaterial color="#8f846f" roughness={1} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
