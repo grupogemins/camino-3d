@@ -161,27 +161,43 @@ export function PremiumScreen() {
             const isSel = p.id !== 'free' && selected === p.id;
             const promo = p.id !== 'free' && coupon?.ok ? applyCoupon(p.id, coupon.code) : null;
             return (
-              <label key={p.id} className={`flex flex-col gap-2 rounded-2xl border-2 bg-surface p-4 ${isSel ? 'border-primary' : 'border-line'} ${p.id === 'free' ? 'cursor-default' : 'cursor-pointer'}`}>
+              <label
+                key={p.id}
+                className={`relative flex flex-col gap-2 overflow-hidden rounded-[var(--radius-card)] p-5 shadow-[var(--shadow-card)] ${
+                  p.highlight ? 'topo bg-primary text-on-primary' : 'border border-line/70 bg-surface'
+                } ${isSel ? 'ring-[3px] ring-[var(--gold)] ring-offset-2 ring-offset-[var(--bg)]' : ''} ${p.id === 'free' ? 'cursor-default' : 'cursor-pointer'}`}
+              >
+                {p.highlight && (
+                  <>
+                    <span aria-hidden className="absolute -left-3 top-[5.6rem] h-6 w-6 rounded-full bg-bg" />
+                    <span aria-hidden className="absolute -right-3 top-[5.6rem] h-6 w-6 rounded-full bg-bg" />
+                  </>
+                )}
                 <span className="flex items-center justify-between gap-2">
-                  <span className="font-extrabold">{p.name}</span>
-                  {p.highlight && <Badge tone="gold">Mais indicado</Badge>}
+                  <span className="font-display text-xl">{p.name}</span>
+                  {p.highlight && <span className="rounded-full bg-[var(--gold)] px-2.5 py-0.5 text-xs font-bold text-ink">Mais indicado</span>}
                 </span>
-                <span>
+                <span className={p.highlight ? 'border-b border-dashed border-white/30 pb-3' : ''}>
                   {promo?.ok ? (
                     <>
-                      <s className="text-muted">{formatEur(p.priceEur)}</s> <b className="text-2xl">{formatEur(promo.priceEur)}</b>
+                      <s className="opacity-60">{formatEur(p.priceEur)}</s> <b className="font-display text-3xl font-semibold">{formatEur(promo.priceEur)}</b>
                     </>
                   ) : (
-                    <b className="text-2xl">{p.priceEur ? formatEur(p.priceEur) : 'Grátis'}</b>
+                    <b className="font-display text-3xl font-semibold">{p.priceEur ? formatEur(p.priceEur) : 'Grátis'}</b>
                   )}{' '}
-                  <span className="text-sm text-muted">{p.billing}</span>
+                  <span className="text-sm opacity-75">{p.billing}</span>
                 </span>
                 <ul className="flex flex-col gap-1 text-sm">
-                  {p.bullets.map((b) => <li key={b} className="flex gap-1.5"><Check aria-hidden size={16} className="mt-0.5 shrink-0 text-primary" />{b}</li>)}
+                  {p.bullets.map((b) => (
+                    <li key={b} className="flex gap-1.5">
+                      <Check aria-hidden size={16} className={`mt-0.5 shrink-0 ${p.highlight ? 'text-[var(--gold)]' : 'text-primary'}`} />
+                      {b}
+                    </li>
+                  ))}
                 </ul>
                 {p.id !== 'free' ? (
-                  <span className="mt-auto flex items-center gap-2 font-semibold">
-                    <input type="radio" name="plan" className="h-5 w-5 accent-[var(--primary)]" checked={isSel} onChange={() => setSelected(p.id as PaidPlan)} />
+                  <span className="mt-auto flex items-center gap-2 pt-1 font-semibold">
+                    <input type="radio" name="plan" className="h-5 w-5 accent-[var(--gold)]" checked={isSel} onChange={() => setSelected(p.id as PaidPlan)} />
                     Selecionar
                   </span>
                 ) : (

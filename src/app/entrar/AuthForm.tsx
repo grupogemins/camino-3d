@@ -42,10 +42,12 @@ export function AuthForm() {
   }
 
   return (
-    <main id="conteudo" className="mx-auto flex min-h-dvh max-w-md flex-col px-5 py-8">
-      <Logo />
-      <h1 className="mt-8 text-2xl font-extrabold">{mode === 'cadastro' ? 'Crie sua conta' : 'Bem-vindo de volta'}</h1>
-      <p className="text-muted">Bom Caminho! Leva menos de 2 minutos.</p>
+    <main id="conteudo" className="mx-auto flex min-h-dvh max-w-md flex-col px-5 pb-8">
+      <div className="topo -mx-5 rounded-b-[2rem] bg-primary px-5 pb-7 pt-6 text-on-primary">
+        <Logo inverted />
+        <h1 className="mt-8 text-[2.2rem] leading-tight">{mode === 'cadastro' ? 'Crie sua conta' : 'Bem-vindo de volta'}</h1>
+        <p className="opacity-80">Bom Caminho! Leva menos de 2 minutos.</p>
+      </div>
       <div className="mt-6">
         <Segmented
           label="Tipo de acesso"
